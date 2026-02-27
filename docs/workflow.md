@@ -1,28 +1,30 @@
-# User Workflow & Logic
+# User Workflow & Automation Logic — Cape Neto Edition
 
-## 1. Authentication & Session Management
-- **Flow**: Landing Page -> Login Form -> Backend Validation -> JWT Token Storage (LocalStorage) -> Dashboard.
-- **Security**: Token expires after 24 hours; unauthenticated users are automatically redirected to the Login page.
+## 1. The Sales Funnel Path
+The CRM follows the real-world conversation flow:
+`Instagram DM` -> `Qualification` -> `WhatsApp/Call` -> `Proposal` -> `Follow-ups` -> `Client`.
 
-## 2. Lead Acquisition & Onboarding
-- **Action**: "Add Lead" button on Dashboard or Leads List.
-- **Process**: User fills out the 8 core fields (Name, Email, Source, etc.).
-- **Validation**: System checks for valid email format and ensuring the lead isn't a duplicate.
-- **Outcome**: Lead is created with status `New` and assigned to the current user.
+## 2. Homepage Behavior (The Action Hub)
+Upon login, the user is NOT shown a list of leads. They are shown the **"What do I do today?"** dashboard:
+1. **New Inquiries**: Leads in `New Inquiry` stage needing a first response.
+2. **Tasks Due Today**: Actions like "Send Proposal" or "Call Lead".
+3. **Overdue Follow-ups**: Automated tasks that were missed.
+4. **Today's Calls**: Leads in `Call Scheduled` stage for today.
 
-## 3. The Sales Pipeline Journey
-- **Kanban Movement**: Dragging a lead card from `Contacted` to `Proposal Sent`.
-- **Automatic Trigger**: When a status changes, the system auto-logs an activity: *"Status changed from [Old Status] to [New Status] by [User] on [Date]."*
-- **Manual Logging**: Users click "Log Activity" on the Lead Detail page to record specifics of calls or meetings.
+## 3. 🤖 Automation: Stage-Triggered Tasks
+To ensure no lead is forgotten, the system automatically creates tasks when specific stages are reached:
 
-## 4. Conversion (The "Winning" Moment)
-- **Trigger**: When a Lead Status is updated to `Won`.
-- **Process**: A "Convert to Client" modal appears.
-- **Data Migration**: 
-  - The Lead is marked as `is_converted: true`.
-  - A new record is created in the `Clients` table using the lead's data.
-  - The interaction history remains linked for full visibility.
+### Trigger: Status -> "Proposal Sent"
+The system creates 4 automatic tasks for that lead:
+- **Task 1**: "Confirm Receipt" (Due: Tomorrow)
+- **Task 2**: "Follow-up Message" (Due: Day 2)
+- **Task 3**: "1-Week Check-in" (Due: Day 7)
+- **Task 4**: "Final 2-Week Mark (Lost?)" (Due: Day 14)
 
-## 5. Task & Follow-up Management
-- **Dashboard Widget**: Shows "Tasks Due Today" and "Overdue Tasks" in red.
-- **Workflow**: Completing a task (checkbox click) marks it as `Done` and removes it from the active dashboard view but keeps it in the "Completed Tasks" history.
+### Trigger: Status -> "Call Scheduled"
+- **Task 1**: "Prepare for Call" (Due: Date of Call)
+
+## 4. Closing the Loop
+- **Winning**: When status becomes `Won`, the lead is archived as a successful client.
+- **Losing**: When status becomes `Lost`, the user **must** provide a `lost_reason` (e.g., "Price too high", "No response").
+- **Re-engaging**: If a lead is not ready now, they move to `Re-engage Later`, and a task is set for 2 months in the future.

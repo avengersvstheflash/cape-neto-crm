@@ -1,28 +1,17 @@
-# Product Requirements Document (PRD)
+# Product Requirements Document (PRD) — Cape Neto Edition
 
 ## Project Vision
-To build a high-performance, lightweight CRM that solves the "lost lead" problem for the Cape Neto agency.
+A conversation-driven lead tracking and "Daily Action" system. The goal is to ensure no Instagram DM or WhatsApp follow-up is ever forgotten.
 
-## Functional Requirements (The "Must-Haves")
+## 🎯 The "Daily Action" Dashboard (Homepage)
+The system must open to a "What do I do today?" screen, NOT a lead list.
+- **Tasks Due Today**: Immediate actions needed.
+- **Overdue Follow-ups**: Leads that went silent.
+- **New Inquiries**: Leads needing their first response.
+- **Call Schedule**: Upcoming meetings for the day.
 
-### 1. User Identity & Security
-- System must allow separate accounts for team members.
-- Passwords must never be stored in plain text (use `bcrypt`).
-- Access to all client data must require a valid JWT token.
-
-### 2. Lead Pipeline (The Core)
-- Users must be able to add leads with Name, Email, Source, and Estimated Value.
-- Leads must move through status stages: `New` -> `Contacted` -> `Proposal` -> `Negotiation` -> `Won/Lost`.
-- A drag-and-drop Kanban board must visualize this pipeline.
-
-### 3. Interaction Audit Trail
-- Every call or meeting note must be timestamped.
-- Notes cannot be deleted (to maintain an accurate history of the relationship).
-
-### 4. Client Conversion
-- When a lead is marked as 'Won', it must be convertible into a 'Client' record with additional fields (Contract Start Date, Value).
-
-## Non-Functional Requirements (The "Quality Controls")
-- **Performance**: Every page must load in under 2 seconds.
-- **Responsiveness**: The CRM must be usable on a tablet or mobile browser.
-- **Reliability**: Data must be stored in a relational database (Relational data = Relational DB).
+## Functional Requirements
+- **Lead Fields**: Must include `instagram_username`, `whatsapp_available` (Yes/No), and `lead_source`.
+- **Pipeline Stages**: `New Inquiry` -> `Contacted` -> `Qualified` -> `Call Scheduled` -> `Proposal Sent` -> `Negotiation` -> `Won` -> `Lost` -> `Re-engage Later`.
+- **Automated Tasks**: Moving a lead to `Proposal Sent` must automatically trigger a sequence of 4 follow-up tasks (Day 1, Day 2, 1 Week, 2 Weeks).
+- **Lost Audit**: Every 'Lost' lead must have a `lost_reason` recorded.

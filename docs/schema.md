@@ -1,56 +1,54 @@
-# Database Schema Design
+# Database Schema Design — Cape Neto Edition
 
 ## Overview
-This project uses **SQLite** for development and **PostgreSQL** for production. We use **SQLAlchemy ORM** to manage data.
+This system is a "Task-Centric" CRM. Leads exist to generate actions (Tasks). We use **SQLite** for development and **SQLAlchemy** as our ORM.
 
 ## Core Tables
 
 ### 1. users
-Stores team members and authentication credentials.
+Team members with login credentials.
 - `id`: Integer (Primary Key)
-- `email`: String (Unique, Not Null)
-- `password_hash`: String (Hashed with bcrypt)
+- `email`: String (Unique)
+- `password_hash`: String (bcrypt)
 - `first_name`: String
 - `last_name`: String
-- `role`: Enum (admin, sales_rep, viewer)
-- `is_active`: Boolean
+- `role`: Enum (admin, sales_rep)
 
 ### 2. leads
-Potential clients in the sales pipeline.
+The source of all potential business.
 - `id`: Integer (PK)
-- `name`: String (Required)
-- `company_name`: String
-- `email`: String
-- `status`: String (Default: 'new')
-- `estimated_value`: Decimal
+- `name`: String (Full Name if known)
+- `instagram_username`: String (Required - Primary DM channel)
+- `phone`: String
+- `whatsapp_available`: Boolean (Yes/No)
+- `email`: String (Optional)
+- `lead_source`: Enum (Instagram, Referral, In-person, Reactivation)
+- `status`: Enum (New Inquiry, Contacted, Qualified, Call Scheduled, Proposal Sent, Negotiation, Won, Lost, Re-engage Later)
+- `lost_reason`: Text (Nullable - used if status is 'Lost')
+- `notes`: Text
 - `assigned_to`: Integer (FK -> users.id)
-- `last_contact_date`: Timestamp
 
-### 3. clients
-Converted leads (closed deals).
+### 3. tasks (The Central Object)
+This table drives the "Daily Action" dashboard.
 - `id`: Integer (PK)
-- `name`: String
-- `contract_value`: Decimal
-- `status`: Enum (active, on_hold, completed)
-- `original_lead_id`: Integer (FK -> leads.id)
-
-### 4. activities
-Logged interactions (calls, emails, meetings).
-- `id`: Integer (PK)
-- `activity_type`: Enum (call, email, meeting, note)
-- `related_to_id`: Integer (ID of lead or client)
-- `description`: Text
-- `logged_by`: Integer (FK -> users.id)
-
-### 5. tasks
-To-do items for the team.
-- `id`: Integer (PK)
-- `title`: String
+- `lead_id`: Integer (FK -> leads.id)
+- `title`: String (e.g., "Day 2: Message Follow-up")
+- `task_type`: Enum (call, message, email, proposal, followup)
 - `due_date`: Date
 - `priority`: Enum (low, medium, high)
-- `status`: Enum (pending, completed)
+- `is_completed`: Boolean (Default: False)
+- `is_auto_generated`: Boolean (Was this created by a stage trigger?)
+- `trigger_stage`: String (The pipeline stage that created this task)
+
+### 4. activities
+The "Memory" of the CRM. Manual logs of what happened.
+- `id`: Integer (PK)
+- `lead_id`: Integer (FK -> leads.id)
+- `activity_type`: Enum (call, email, meeting, note)
+- `description`: Text
+- `logged_at`: Timestamp (Default: Now)
+- `logged_by`: Integer (FK -> users.id)
 
 ## Relationships
-- **1 User -> Many Leads**: One sales rep can manage many potential deals.
-- **1 Lead -> Many Activities**: One lead can have a history of many calls/emails.
-- **1 Lead -> 1 Client**: A lead becomes exactly one client when the deal is won.
+- **1 Lead -> Many Tasks**: A lead can have multiple follow-ups scheduled.
+- **1 Lead -> Many Activities**: A full timeline of every conversation had.
