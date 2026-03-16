@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from database import engine
+from database import engine, get_db
+from fastapi import Depends
+from sqlalchemy.orm import Session
+from sqlalchemy import text
 import models
 from routers import auth
 
@@ -28,6 +31,14 @@ def root():
         "version": "Phase 1.5",
         "next": "Ready for Task/Lead models"
     }
+
+@app.get("/health")
+def health_check(db: Session = Depends(get_db)):
+    try:
+        db.execute(text("SELECT 1"))
+        return {"status": "ok", "database": "connected"}
+    except Exception as e:
+        return {"status": "error", "database": str(e)}
 
 if __name__ == "__main__":
     import uvicorn
