@@ -5,11 +5,14 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from database import get_db
+from config import settings  # ← single source of truth now
+
 
 # ── Config ──────────────────────────────────────────────
-SECRET_KEY = "changeme-super-secret-key"
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 hours
+SECRET_KEY = settings.jwt_secret_key
+ALGORITHM = settings.jwt_algorithm
+ACCESS_TOKEN_EXPIRE_MINUTES = settings.access_token_expire_minutes
+
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/login")
 
@@ -62,10 +65,11 @@ def get_current_user(
         raise credentials_exception
     return user
 
+
 # ── Role Guard ───────────────────────────────────────────
 def require_role(*roles: str):
     def role_checker(
-        current_user = Depends(get_current_user)
+        current_user=Depends(get_current_user)
     ):
         if current_user.role not in roles:
             raise HTTPException(
