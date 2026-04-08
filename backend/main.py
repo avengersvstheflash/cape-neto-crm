@@ -1,19 +1,17 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from database import engine, get_db
-from fastapi import Depends
-from sqlalchemy.orm import Session
 from sqlalchemy import text
+from sqlalchemy.orm import Session
 import models
-from routers import auth
-
+from database import engine, get_db
+from routers import auth, leads, tasks, activities
 
 # Create all DB tables on startup
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Cape Neto CRM API - Phase 1.5")
+app = FastAPI(title="Cape Neto CRM API - Week 2")
 
-# Allow frontend to talk to backend
+# CORS for frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -22,14 +20,19 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Include routers - clean and simple
 app.include_router(auth.router)
+app.include_router(leads.router)
+app.include_router(tasks.router)
+app.include_router(activities.router)
 
 @app.get("/")
 def root():
     return {
-        "message": "🚀 Cape Neto CRM Backend: Alive and Task-Centric!",
-        "version": "Phase 1.5",
-        "next": "Ready for Task/Lead models"
+        "message": "🚀 Cape Neto CRM Backend: Week 2 - Leads + Tasks + RBAC Active!",
+        "version": "Week 2",
+        "endpoints": ["/docs", "/health", "/leads/", "/auth/"],
+        "status": "Ready for lead CRUD operations"
     }
 
 @app.get("/health")

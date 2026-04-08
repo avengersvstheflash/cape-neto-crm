@@ -1,6 +1,6 @@
 from sqlalchemy import (
     Column, Integer, String, Boolean, Text, Date,
-    DateTime, ForeignKey, DECIMAL, CheckConstraint, Index
+    DateTime, ForeignKey, DECIMAL, CheckConstraint, Index, UniqueConstraint
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -21,10 +21,10 @@ class User(Base):
         CheckConstraint("role IN ('admin', 'sales_rep', 'viewer')", name="check_user_role"),
     )
 
-    # Relationships
     leads = relationship("Lead", back_populates="assigned_user")
     tasks = relationship("Task", back_populates="assigned_user")
     activities = relationship("Activity", back_populates="user")
+
 
 # ── PIPELINE STAGE ────────────────────────────────────
 class PipelineStage(Base):
@@ -33,18 +33,18 @@ class PipelineStage(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(100), unique=True, nullable=False)
     position = Column(Integer, nullable=False)
-    auto_tasks = Column(Text)  # JSON string — task templates for this stage
+    auto_tasks = Column(Text)
     created_at = Column(DateTime, server_default=func.now())
 
-    # Relationships
     leads = relationship("Lead", back_populates="stage")
+
 
 # ── LEAD ──────────────────────────────────────────────
 class Lead(Base):
     __tablename__ = "leads"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    instagram_handle = Column(String(100), nullable=False, index=True)
+    instagram_handle = Column(String(100), unique=True, nullable=False, index=True)
     full_name = Column(String(200))
     phone = Column(String(30))
     email = Column(String(255))
@@ -55,7 +55,6 @@ class Lead(Base):
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
-    # Foreign Keys
     stage_id = Column(Integer, ForeignKey("pipeline_stages.id", ondelete="SET NULL"), nullable=True)
     assigned_to = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
@@ -64,7 +63,6 @@ class Lead(Base):
         Index("idx_leads_stage_status", "stage_id", "status"),
     )
 
-    # Relationships
     stage = relationship("PipelineStage", back_populates="leads")
     assigned_user = relationship("User", back_populates="leads")
     tasks = relationship("Task", back_populates="lead", cascade="all, delete-orphan")
@@ -80,6 +78,7 @@ class Task(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     title = Column(String(255), nullable=False)
     description = Column(Text)
+    task_type = Column(String(50), default="manual")
     due_date = Column(Date)
     priority = Column(String(20), default="medium")
     status = Column(String(20), default="pending")
@@ -87,19 +86,19 @@ class Task(Base):
     created_at = Column(DateTime, server_default=func.now())
     completed_at = Column(DateTime, nullable=True)
 
-    # Foreign Keys
     lead_id = Column(Integer, ForeignKey("leads.id", ondelete="CASCADE"), nullable=False)
     assigned_to = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     __table_args__ = (
         CheckConstraint("priority IN ('low', 'medium', 'high', 'urgent')", name="check_task_priority"),
         CheckConstraint("status IN ('pending', 'in_progress', 'done', 'cancelled')", name="check_task_status"),
+        CheckConstraint("task_type IN ('manual', 'call', 'follow_up', 'proposal', 'check_in')", name="check_task_type"),
         Index("idx_tasks_due_status", "due_date", "status"),
     )
 
-    # Relationships
     lead = relationship("Lead", back_populates="tasks")
     assigned_user = relationship("User", back_populates="tasks")
+
 
 # ── ACTIVITY ──────────────────────────────────────────
 class Activity(Base):
@@ -108,10 +107,9 @@ class Activity(Base):
     id = Column(Integer, primary_key=True, autoincrement=True)
     action_type = Column(String(50), nullable=False)
     description = Column(Text)
-    metadata_ = Column("metadata", Text)  # JSON string — extra context
+    activity_metadata = Column("metadata", Text)  # ← RENAMED from metadata_
     created_at = Column(DateTime, server_default=func.now())
 
-    # Foreign Keys
     lead_id = Column(Integer, ForeignKey("leads.id", ondelete="CASCADE"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
@@ -124,9 +122,9 @@ class Activity(Base):
         Index("idx_activities_lead_created", "lead_id", "created_at"),
     )
 
-    # Relationships
     lead = relationship("Lead", back_populates="activities")
     user = relationship("User", back_populates="activities")
+
 
 # ── DEAL ──────────────────────────────────────────────
 class Deal(Base):
@@ -142,16 +140,17 @@ class Deal(Base):
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
 
-    # Foreign Keys
     lead_id = Column(Integer, ForeignKey("leads.id", ondelete="CASCADE"), nullable=False)
+    created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     __table_args__ = (
         CheckConstraint("value >= 0", name="check_deal_value_positive"),
         CheckConstraint("status IN ('open', 'won', 'lost')", name="check_deal_status"),
     )
 
-    # Relationships
     lead = relationship("Lead", back_populates="deals")
+    creator = relationship("User", foreign_keys=[created_by])
+
 
 # ── CONVERSATION ──────────────────────────────────────
 class Conversation(Base):
@@ -159,13 +158,12 @@ class Conversation(Base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     platform = Column(String(30), default="instagram")
-    direction = Column(String(10), nullable=False)  # 'inbound' or 'outbound'
+    direction = Column(String(10), nullable=False)
     message_text = Column(Text)
     sent_at = Column(DateTime, nullable=False)
     is_read = Column(Boolean, default=False)
     created_at = Column(DateTime, server_default=func.now())
 
-    # Foreign Keys
     lead_id = Column(Integer, ForeignKey("leads.id", ondelete="CASCADE"), nullable=False)
 
     __table_args__ = (
@@ -173,5 +171,23 @@ class Conversation(Base):
         Index("idx_conversations_lead_sent", "lead_id", "sent_at"),
     )
 
-    # Relationships
     lead = relationship("Lead", back_populates="conversations")
+
+
+# ── WEBHOOK LOG ───────────────────────────────────────
+class WebhookLog(Base):
+    __tablename__ = "webhook_logs"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    webhook_id = Column(String(255), unique=True, nullable=False)
+    source = Column(String(50), nullable=False)
+    event_type = Column(String(100), nullable=False)
+    payload = Column(Text)
+    processed = Column(Boolean, default=False)
+    error_message = Column(Text, nullable=True)
+    received_at = Column(DateTime, server_default=func.now())
+
+    __table_args__ = (
+        CheckConstraint("source IN ('instagram', 'whatsapp', 'manual')", name="check_webhook_source"),
+        Index("idx_webhook_logs_received", "received_at"),
+    )

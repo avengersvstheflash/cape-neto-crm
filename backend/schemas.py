@@ -8,6 +8,7 @@ from decimal import Decimal
 class BaseSchema(BaseModel):
     model_config = {"from_attributes": True}
 
+
 # ── USER SCHEMAS ──────────────────────────────────────
 class UserCreate(BaseSchema):
     email: EmailStr
@@ -22,12 +23,12 @@ class UserCreate(BaseSchema):
             raise ValueError(f"Role must be one of {allowed}")
         return v
 
-
 class UserResponse(BaseSchema):
     id: int
     email: EmailStr
     role: str
     created_at: datetime
+
 
 # ── PIPELINE STAGE SCHEMAS ────────────────────────────
 class PipelineStageCreate(BaseSchema):
@@ -35,13 +36,13 @@ class PipelineStageCreate(BaseSchema):
     position: int
     auto_tasks: Optional[str] = None
 
-
 class PipelineStageResponse(BaseSchema):
     id: int
     name: str
     position: int
     auto_tasks: Optional[str] = None
     created_at: datetime
+
 
 # ── LEAD SCHEMAS ──────────────────────────────────────
 class LeadCreate(BaseSchema):
@@ -56,6 +57,17 @@ class LeadCreate(BaseSchema):
     stage_id: Optional[int] = None
     assigned_to: Optional[int] = None
 
+class LeadUpdate(BaseSchema):
+    instagram_handle: Optional[str] = None
+    full_name: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[EmailStr] = None
+    source: Optional[str] = None
+    status: Optional[str] = None
+    deal_value: Optional[Decimal] = None
+    notes: Optional[str] = None
+    stage_id: Optional[int] = None
+    assigned_to: Optional[int] = None
 
 class LeadResponse(BaseSchema):
     id: int
@@ -72,10 +84,12 @@ class LeadResponse(BaseSchema):
     created_at: datetime
     updated_at: datetime
 
+
 # ── TASK SCHEMAS ──────────────────────────────────────
 class TaskCreate(BaseSchema):
     title: str
     description: Optional[str] = None
+    task_type: Optional[str] = "manual"
     due_date: Optional[date] = None
     priority: Optional[str] = "medium"
     status: Optional[str] = "pending"
@@ -83,11 +97,11 @@ class TaskCreate(BaseSchema):
     lead_id: int
     assigned_to: Optional[int] = None
 
-
 class TaskResponse(BaseSchema):
     id: int
     title: str
     description: Optional[str] = None
+    task_type: str
     due_date: Optional[date] = None
     priority: str
     status: str
@@ -97,20 +111,20 @@ class TaskResponse(BaseSchema):
     created_at: datetime
     completed_at: Optional[datetime] = None
 
+
 # ── ACTIVITY SCHEMAS ──────────────────────────────────
 class ActivityCreate(BaseSchema):
     action_type: str
     description: Optional[str] = None
-    metadata_: Optional[str] = None
+    activity_metadata: Optional[str] = None
     lead_id: int
     user_id: Optional[int] = None
-
 
 class ActivityResponse(BaseSchema):
     id: int
     action_type: str
     description: Optional[str] = None
-    metadata_: Optional[str] = None
+    activity_metadata: Optional[str] = None
     lead_id: int
     user_id: Optional[int] = None
     created_at: datetime
@@ -126,7 +140,6 @@ class DealCreate(BaseSchema):
     notes: Optional[str] = None
     lead_id: int
 
-
 class DealResponse(BaseSchema):
     id: int
     title: str
@@ -140,14 +153,13 @@ class DealResponse(BaseSchema):
     updated_at: datetime
 
 
-# ── CONVERSATION SCHEMAS ───────────────────────────────
+# ── CONVERSATION SCHEMAS ──────────────────────────────
 class ConversationCreate(BaseSchema):
     platform: Optional[str] = "instagram"
     direction: str
     message_text: Optional[str] = None
     sent_at: datetime
     lead_id: int
-
 
 class ConversationResponse(BaseSchema):
     id: int
