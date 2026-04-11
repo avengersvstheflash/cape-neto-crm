@@ -206,3 +206,20 @@ class ClientOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+# ── USER SCHEMAS ──────────────────────────────────────────────────────────────
+
+class UserOut(BaseModel):
+    id: int
+    email: str
+    role: str
+    client_id: Optional[int]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True
+
+class UserUpdate(BaseModel):
+    role: Optional[str] = None
+    client_id: Optional[int] = None
