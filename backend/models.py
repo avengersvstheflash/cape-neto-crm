@@ -24,6 +24,8 @@ class User(Base):
     leads = relationship("Lead", back_populates="assigned_user")
     tasks = relationship("Task", back_populates="assigned_user")
     activities = relationship("Activity", back_populates="user")
+    client_id = Column(Integer, ForeignKey("clients.id", ondelete="SET NULL"), nullable=True)
+    client = relationship("Client", back_populates="users")
 
 
 # ── PIPELINE STAGE ────────────────────────────────────
