@@ -116,7 +116,7 @@ class Activity(Base):
     __table_args__ = (
         CheckConstraint(
             "action_type IN ('stage_change', 'task_created', 'task_completed', "
-            "'note_added', 'deal_created', 'message_sent', 'status_change')",
+            "'note_added', 'deal_created', 'message_sent', 'status_change', 'webhook_received')",
             name="check_activity_action_type"
         ),
         Index("idx_activities_lead_created", "lead_id", "created_at"),
@@ -191,3 +191,40 @@ class WebhookLog(Base):
         CheckConstraint("source IN ('instagram', 'whatsapp', 'manual')", name="check_webhook_source"),
         Index("idx_webhook_logs_received", "received_at"),
     )
+
+
+# ── CLIENT ────────────────────────────────────────────
+class Client(Base):
+    __tablename__ = "clients"
+
+    id         = Column(Integer, primary_key=True, autoincrement=True)
+    name       = Column(String(200), nullable=False)
+    slug       = Column(String(100), unique=True, nullable=False, index=True)
+    owner_email = Column(String(255), nullable=True)
+
+    # Plan tier — what service level this client is on
+    plan       = Column(String(30), default="starter", nullable=False)
+
+    # Status — is the client currently active with the agency?
+    status     = Column(String(30), default="active", nullable=False)
+
+    # Optional: when did they join and when does their plan renew
+    joined_at  = Column(Date, nullable=True)
+    plan_renews_at = Column(Date, nullable=True)
+
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+
+    __table_args__ = (
+        CheckConstraint(
+            "plan IN ('starter', 'growth', 'pro', 'enterprise')",
+            name="check_client_plan"
+        ),
+        CheckConstraint(
+            "status IN ('active', 'paused', 'churned', 'trial')",
+            name="check_client_status"
+        ),
+    )
+
+    # Relationships (will connect to User + Lead next)
+    users = relationship("User", back_populates="client")

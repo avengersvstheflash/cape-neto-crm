@@ -170,3 +170,39 @@ class ConversationResponse(BaseSchema):
     is_read: bool
     lead_id: int
     created_at: datetime
+
+    # ── CLIENT SCHEMAS ────────────────────────────────────────────────────────────
+
+from datetime import date as DateType
+from typing import Optional
+
+class ClientCreate(BaseModel):
+    name: str
+    slug: str
+    owner_email: Optional[str] = None
+    plan: str = "starter"          # starter | growth | pro | enterprise
+    status: str = "trial"          # trial | active | paused | churned
+    joined_at: Optional[DateType] = None
+    plan_renews_at: Optional[DateType] = None
+
+class ClientUpdate(BaseModel):
+    name: Optional[str] = None
+    owner_email: Optional[str] = None
+    plan: Optional[str] = None
+    status: Optional[str] = None
+    joined_at: Optional[DateType] = None
+    plan_renews_at: Optional[DateType] = None
+
+class ClientOut(BaseModel):
+    id: int
+    name: str
+    slug: str
+    owner_email: Optional[str]
+    plan: str
+    status: str
+    joined_at: Optional[DateType]
+    plan_renews_at: Optional[DateType]
+    created_at: datetime
+
+    class Config:
+        from_attributes = True

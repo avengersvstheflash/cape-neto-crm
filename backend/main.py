@@ -4,7 +4,7 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 import models
 from database import engine, get_db
-from routers import auth, leads, tasks, activities
+from routers import auth, leads, tasks, activities, clients
 
 # Create all DB tables on startup
 models.Base.metadata.create_all(bind=engine)
@@ -25,6 +25,7 @@ app.include_router(auth.router)
 app.include_router(leads.router)
 app.include_router(tasks.router)
 app.include_router(activities.router)
+app.include_router(clients.router)
 
 @app.get("/")
 def root():
