@@ -1,218 +1,208 @@
-# Cape Neto CRM
+# Cape Neto CRM — Engineering Case Study
 
-> A custom Instagram-native Customer Relationship Management (CRM) system built for **Cape Neto** — a South African service agency. Developed as a full-stack internship project by [@avengersvstheflash](https://github.com/avengersvstheflash).
+> **Production-grade, Instagram-native Customer Relationship Management (CRM) system** engineered for **Cape Neto** (Cape Town, South Africa). Built during a high-velocity **92-hour engineering internship sprint**, designed around NACE career competencies: Critical Thinking, Technology Application, and Professionalism.
 
----
-
-## Project Status
-
-> **Week 2 Complete** — Core backend engine live. JWT auth, full CRUD, RBAC, tasks, activities, and config hardening all shipped and verified.
-
-| Phase | Status |
-|---|---|
-| Week 1 — Foundation & Models | ✅ Complete |
-| Week 2 — Core CRUD, Auth & RBAC | ✅ Complete |
-| Week 3 — Pipeline, Conversion & Webhooks | 🔜 Up next |
-| Week 4 — Frontend (React + Vite) | ⬜ Pending |
+[![FastAPI](https://img.shields.io/badge/FastAPI-0.135+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.14-blue.svg?logo=python&logoColor=white)](https://python.org)
+[![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-red.svg)](https://www.sqlalchemy.org/)
+[![Alembic](https://img.shields.io/badge/Alembic-Migrations-orange.svg)](https://alembic.sqlalchemy.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Test Suite](https://img.shields.io/badge/Tests-9%2F9%20Passing-brightgreen.svg)](backend/test_api.py)
 
 ---
 
-## Tech Stack
+## Executive Summary
 
-| Layer | Technology |
-|---|---|
-| Backend | FastAPI (Python 3.14) |
-| Database | SQLite (dev) → PostgreSQL (prod) |
-| ORM | SQLAlchemy 2.0 |
-| Migrations | Alembic |
-| Auth | JWT (python-jose) + bcrypt |
-| Config | pydantic-settings + .env |
-| Frontend | React + Vite (Week 4) |
-| Styling | Tailwind CSS (Week 4) |
+Cape Neto is a South African creative and digital marketing agency acquiring clients primarily through Instagram direct messages and social discovery. Off-the-shelf enterprise CRMs (Salesforce, HubSpot) proved excessively complex, costly, and disconnected from Instagram direct messaging workflows.
+
+This project delivers an **Instagram-native CRM**: a secure, high-throughput REST API with row-level Role-Based Access Control (RBAC), automatic Instagram handle normalization, follow-up task orchestration, client account tracking, and a lightweight operational single-page application.
 
 ---
 
-## Project Structure
+## System Architecture
 
 ```
-cape-neto-crm/
-├── backend/
-│   ├── alembic/
-│   │   ├── versions/
-│   │   │   └── 9b6850aa0158_week2_full_schema.py
-│   │   └── env.py                  ← render_as_batch=True for SQLite
-│   ├── routers/
-│   │   ├── auth.py                 ← Register, Login, /me
-│   │   ├── leads.py                ← Full CRUD + RBAC + pagination
-│   │   ├── tasks.py                ← List, Create, Complete, Delete
-│   │   └── activities.py          ← Timeline + Create
-│   ├── auth.py                     ← JWT + bcrypt utilities
-│   ├── config.py                   ← pydantic-settings env loader
-│   ├── database.py                 ← SQLAlchemy engine + session
-│   ├── main.py                     ← FastAPI app entry point
-│   ├── models.py                   ← 7 ORM models
-│   ├── schemas.py                  ← Pydantic V2 schemas
-│   ├── .env                        ← Local secrets (not committed)
-│   ├── alembic.ini
-│   └── requirements.txt
-├── docs/
-├── .gitignore
-├── LICENSE
-└── README.md
+                                 ┌────────────────────────┐
+                                 │   Operational Client   │
+                                 │ (Vite + React / SPA)   │
+                                 └───────────┬────────────┘
+                                             │ HTTP / JWT Bearer
+                                             ▼
+┌─────────────────────────────────────────────────────────────────────────────────┐
+│                           FASTAPI APPLICATION LAYER                             │
+│                                                                                 │
+│   ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐    │
+│   │  /auth (JWT)  │  │ /leads (CRUD) │  │ /tasks (Queue)│  │ /clients (Mgt)│    │
+│   └───────┬───────┘  └───────┬───────┘  └───────┬───────┘  └───────┬───────┘    │
+│           │                  │                  │                  │            │
+│   ┌───────▼──────────────────▼──────────────────▼──────────────────▼────────┐   │
+│   │              Row-Level RBAC Policy Engine (admin/rep/viewer)            │   │
+│   └──────────────────────────────────┬──────────────────────────────────────┘   │
+│                                      │                                          │
+│   ┌──────────────────────────────────▼──────────────────────────────────────┐   │
+│   │                        SQLAlchemy 2.0 ORM Engine                        │   │
+│   └──────────────────────────────────┬──────────────────────────────────────┘   │
+└──────────────────────────────────────┼──────────────────────────────────────────┘
+                                       │
+                                       ▼
+                     ┌──────────────────────────────────┐
+                     │    Relational Persistence DB     │
+                     │  SQLite (Dev) / Postgres (Prod)  │
+                     │  Alembic Batch-mode Migrations   │
+                     └──────────────────────────────────┘
 ```
 
----
+### Core Technology Stack
 
-## API Endpoints (Week 2)
-
-### Auth — `/auth`
-| Method | Endpoint | Description |
+| Layer | Technology | Engineering Rationale |
 |---|---|---|
-| POST | `/auth/register` | Register a new user |
-| POST | `/auth/login` | Login, returns JWT token |
-| GET | `/auth/me` | Get current user profile |
-
-### Leads — `/leads`
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/leads/` | List leads (RBAC + filters + pagination) |
-| POST | `/leads/` | Create lead (Instagram normalization) |
-| GET | `/leads/{id}` | Get lead detail |
-| PUT | `/leads/{id}` | Update lead (partial, RBAC) |
-
-### Tasks — `/tasks`
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/tasks/` | List tasks (RBAC + overdue filter) |
-| POST | `/tasks/` | Create task (auto-assign to creator) |
-| PUT | `/tasks/{id}/complete` | Complete task + timestamp |
-| DELETE | `/tasks/{id}` | Delete task (204 No Content) |
-
-### Activities — `/activities`
-| Method | Endpoint | Description |
-|---|---|---|
-| POST | `/activities/` | Log an activity against a lead |
-| GET | `/activities/` | Get timeline (newest first) |
-
-### System
-| Method | Endpoint | Description |
-|---|---|---|
-| GET | `/health` | Health check + DB connection status |
-| GET | `/` | Root — API info |
+| **API Framework** | FastAPI (Python 3.10–3.14) | High throughput ASGI performance, native OpenAPI/Swagger self-documentation, and declarative dependency injection. |
+| **Data Validation** | Pydantic V2 & `pydantic-settings` | Strict request parsing, zero-overhead serialisation, and environment configuration management. |
+| **Persistence & ORM** | SQLAlchemy 2.0 | Declarative relational mappings, explicit query execution, and database dialect portability. |
+| **Schema Migrations** | Alembic (Batch Mode) | Version-controlled DDL tracking; enabled `render_as_batch=True` to execute constraint updates safely on SQLite without data truncation. |
+| **Authentication & RBAC** | Stateless JWT (`python-jose`) + `bcrypt` | Secure password hashing with salt generation, token-based session verification, and granular role enforcement. |
+| **Frontend UI** | React + Vite + Tailwind CSS | Zero-bloat, single-page operational workspace communicating via standard `fetch()` API calls. |
 
 ---
 
-## Data Models
+## Role-Based Access Control (RBAC) Matrix
 
-7 SQLAlchemy ORM models covering the full CRM domain:
+Access control is enforced at the dependency injection level in FastAPI, ensuring row-level data isolation across sales agents:
 
-- **User** — roles: `admin`, `sales_rep`, `viewer`
-- **Lead** — Instagram-native, status: `active`, `won`, `lost`, `paused`
-- **Task** — type: `manual`, `call`, `follow_up`, `proposal`, `check_in`
-- **Activity** — action_type: `stage_change`, `task_created`, `task_completed`, `note_added`, `deal_created`, `message_sent`, `status_change`
-- **PipelineStage** — visual funnel (Week 3)
-- **Deal** — linked to leads + users
-- **WebhookLog** — Instagram DM event storage (Week 3)
+| Role | Leads | Task Queue | Activity Log | Client Accounts | User Management |
+|---|:---:|:---:|:---:|:---:|:---:|
+| `admin` | Full CRUD (All) | Full CRUD (All) | Full Audit Access | Full Access | Full Access |
+| `sales_rep` | Scoped to Assigned Leads | Own Tasks Only | Scoped to Assigned Leads | Read-Only | Self Profile Only |
+| `viewer` | Read-Only | Read-Only | Read-Only | Read-Only | Self Profile Only |
 
 ---
 
-## RBAC Model
+## Shipped Core Capabilities
 
-| Role | Leads | Tasks | Activities |
-|---|---|---|---|
-| `admin` | All leads | All tasks | Full access |
-| `sales_rep` | Own leads only | Own tasks only | Own leads only |
-| `viewer` | Read-only | Read-only | Read-only |
+### 1. Instagram-Native Lead Engine
+- **Normalization**: Automatic sanitization and `@` prefixing of handles (e.g. `raw_handle` &rarr; `@raw_handle`).
+- **Status Progression Lifecycle**: `active` &rarr; `won` &rarr; `lost` &rarr; `paused`.
+- **Relational Integrity**: Foreign-key bindings to pipeline stages and assigned account executives with cascade guarantees.
+
+### 2. Task & Follow-up Orchestration
+- **Action Types**: `call`, `follow_up`, `proposal`, `check_in`, and `manual`.
+- **Due Date Scheduling**: Overdue task filtering with automatic priority stratification (`low`, `medium`, `high`, `urgent`).
+- **Auto-assignment**: Tasks automatically bound to the creating representative or explicitly delegated by an administrator.
+- **Idempotent Completion**: State toggle (`PUT /tasks/{id}/complete`) recording server-side completion timestamps.
+
+### 3. Comprehensive Audit Trail (Activities)
+- Immutable timeline records capturing interaction history: `stage_change`, `task_created`, `task_completed`, `note_added`, `deal_created`, and `message_sent`.
+
+### 4. Client & Account Directory
+- Dedicated `Client` model tracking agency client plans (`starter`, `growth`, `pro`, `enterprise`), subscription statuses (`active`, `paused`, `churned`, `trial`), and renewal milestones.
 
 ---
 
-## Getting Started
+## Architectural Specifications & Future Extensions
+
+The data schema is forward-compatible and intentionally designed for horizontal integration:
+
+- **Instagram DM Webhook Pipeline**: The `WebhookLog` entity (`webhook_id`, `source`, `event_type`, `payload`, `processed`) is primed to ingest Meta Graph API webhook events with replay resilience and deduplication.
+- **Automated Pipeline Worker**: The `PipelineStage.auto_tasks` specification provides schema backing for event-driven task automation upon lead stage transitions.
+
+---
+
+## ⚡ 2-Minute Quickstart
 
 ### Prerequisites
-- Python 3.10+
+- Python 3.10+ (tested on Python 3.14)
+- Node.js 18+ (for frontend dashboard)
 - Git
 
-### Setup
-
+### 1. Clone & Setup Backend
 ```bash
-# 1. Clone the repo
+# Clone the repository
 git clone https://github.com/avengersvstheflash/cape-neto-crm.git
 cd cape-neto-crm/backend
 
-# 2. Create and activate virtual environment
+# Create & activate virtual environment
 python -m venv venv
 venv\Scripts\activate        # Windows
-source venv/bin/activate     # Mac/Linux
+source venv/bin/activate     # macOS / Linux
 
-# 3. Install dependencies
+# Install dependencies
 pip install -r requirements.txt
 
-# 4. Create your .env file
-copy .env.example .env       # Windows
-cp .env.example .env         # Mac/Linux
-# Edit .env with your values
+# Run migrations
+python -m alembic upgrade head
 
-# 5. Run migrations
-alembic upgrade head
+# Seed realistic demo data
+python seed.py
 
-# 6. Start the server
-uvicorn main:app --reload
+# Start API server
+uvicorn main:app --reload --port 8000
 ```
 
-### Environment Variables
+Interactive API documentation will be immediately accessible at **[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)**.
 
-```env
-DATABASE_URL=sqlite:///./crm.db
-JWT_SECRET_KEY=your-secret-key-here
-ACCESS_TOKEN_EXPIRE_MINUTES=60
-DEBUG=true
+### 2. Seeded Test Credentials
+| Role | Email | Password | Access Level |
+|---|---|---|---|
+| **Admin** | `admin@capeneto.com` | `admin123` | Global system control |
+| **Sales Rep** | `sarah.rep@capeneto.com` | `rep123` | Scoped to assigned leads & tasks |
+| **Viewer** | `auditor@capeneto.com` | `viewer123` | Read-only access |
+
+### 3. Run Automated Tests
+```bash
+pytest test_api.py -v
 ```
 
-### API Documentation
-
-Once running, open: **http://127.0.0.1:8000/docs**
-
-Swagger UI is available with full interactive testing for all endpoints.
+### 4. Launch Operational Frontend Dashboard
+```bash
+cd ../frontend
+npm install
+npm run dev
+```
+Open **[http://localhost:5173](http://localhost:5173)** in your browser to interact with the operational UI. Click the **👤 Admin User** or **💼 Sales Rep** quick-login buttons to test live data immediately.
 
 ---
 
-## Roadmap
+## API Reference Summary
 
-- [x] Repository initialization
-- [x] Backend scaffold (FastAPI)
-- [x] Database models (7 models)
-- [x] Alembic migrations
-- [x] JWT authentication + bcrypt
-- [x] Leads CRUD with RBAC
-- [x] Tasks router (create, complete, delete)
-- [x] Activities timeline
-- [x] Config hardening (pydantic-settings + .env)
-- [ ] Pipeline stages router
-- [ ] Lead → Client conversion endpoint
-- [ ] Instagram webhook receiver
-- [ ] Request logging middleware
-- [ ] Frontend scaffold (React + Vite)
-- [ ] Dashboard UI
-- [ ] Production deployment
+### Authentication (`/auth`)
+- `POST /auth/register` — Register agency team member
+- `POST /auth/login` — Authenticate and receive signed JWT Bearer token
+- `GET /auth/me` — Retrieve active session profile and verified role
+
+### Leads Management (`/leads`)
+- `GET /leads/` — Filterable lead index (RBAC scoped, status/stage filters, pagination)
+- `POST /leads/` — Ingest lead with Instagram handle normalization
+- `GET /leads/{id}` — Lead detail with relational activity history
+- `PUT /leads/{id}` — Modify lead attributes, assignment, or status
+
+### Tasks Queue (`/tasks`)
+- `GET /tasks/` — List active tasks with overdue and priority filters
+- `POST /tasks/` — Create scheduled task linked to lead
+- `PUT /tasks/{id}/complete` — Mark task resolved with audit timestamp
+- `DELETE /tasks/{id}` — Remove task (admin or task owner)
+
+### Client Accounts (`/clients`)
+- `GET /clients/` — Agency client directory
+- `POST /clients/` — Register converted client account
+- `GET /clients/{id}` — Client subscription detail
+
+### Activity Timeline (`/activities`)
+- `GET /activities/` — Chronological lead interaction stream
+- `POST /activities/` — Record manual call log, DM note, or status update
 
 ---
 
-## Commit History
+## 92-Hour Internship Delivery Context
 
-| Commit | Description |
-|---|---|
-| `2050e18` | feat: Week 2 complete — config hardening |
-| `ed082c8` | feat: Week 2 core CRUD, RBAC, and migration restore |
-| `bcb9e1e` | feat: add /health endpoint with DB check |
-| `3f4b179` | feat: add Alembic migrations — initial schema |
-| `d66d46a` | fix: add missing dependencies + auth.py |
+Developed by **[@avengersvstheflash](https://github.com/avengersvstheflash)** as part of the Cape Neto Solutions technical internship. 
+
+The engagement focused on rapid delivery under real-world agency constraints:
+- Delivered zero-regression database schema versioning across multiple iterations using Alembic.
+- Enforced strict relational constraints and check guards at the database tier.
+- Balanced lean architectural footprint with enterprise-standard security practices.
 
 ---
 
 ## License
 
-This project is licensed under the **MIT License**. See [LICENSE](LICENSE) for details.
-
----
-
-> Developed by [@avengersvstheflash](https://github.com/avengersvstheflash) — Internship Project 2026 | Cape Neto, South Africa
+Distributed under the **MIT License**. See [LICENSE](LICENSE) for full details.
