@@ -4,12 +4,12 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 import models
 from database import engine, get_db
-from routers import auth, leads, tasks, activities, clients, users
+from routers import auth, leads, tasks, activities, clients, users, pipeline_stages
 
 # Create all DB tables on startup
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Cape Neto CRM API - Week 2")
+app = FastAPI(title="Cape Neto CRM API")
 
 # CORS for frontend
 app.add_middleware(
@@ -27,6 +27,7 @@ app.include_router(tasks.router)
 app.include_router(activities.router)
 app.include_router(clients.router)
 app.include_router(users.router)
+app.include_router(pipeline_stages.router)
 
 @app.get("/")
 def root():

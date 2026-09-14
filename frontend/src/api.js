@@ -62,6 +62,10 @@ export async function updateLead(id, payload) {
   return request('PUT', `/leads/${id}`, payload);
 }
 
+export async function deleteLead(id) {
+  return request('DELETE', `/leads/${id}`);
+}
+
 // ── Tasks ───────────────────────────────────
 export async function fetchTasks(params = {}) {
   const q = new URLSearchParams(params).toString();
@@ -70,6 +74,10 @@ export async function fetchTasks(params = {}) {
 
 export async function createTask(payload) {
   return request('POST', '/tasks/', payload);
+}
+
+export async function updateTask(id, payload) {
+  return request('PUT', `/tasks/${id}`, payload);
 }
 
 export async function completeTask(id) {
@@ -90,10 +98,46 @@ export async function createActivity(payload) {
   return request('POST', '/activities/', payload);
 }
 
+export async function updateActivity(id, payload) {
+  return request('PUT', `/activities/${id}`, payload);
+}
+
+export async function deleteActivity(id) {
+  return request('DELETE', `/activities/${id}`);
+}
+
 // ── Clients ─────────────────────────────────
 export async function fetchClients() {
   return request('GET', '/clients/');
 }
 
-export { API_BASE };
+export async function createClient(payload) {
+  return request('POST', '/clients/', payload);
+}
 
+export async function updateClient(id, payload) {
+  return request('PATCH', `/clients/${id}`, payload);
+}
+
+export async function deleteClient(id) {
+  return request('DELETE', `/clients/${id}`);
+}
+
+// ── Pipeline Stages ─────────────────────────
+export async function fetchStages() {
+  return request('GET', '/pipeline-stages/');
+}
+
+export async function createStage(payload) {
+  return request('POST', '/pipeline-stages/', payload);
+}
+
+export async function updateStage(id, payload) {
+  return request('PUT', `/pipeline-stages/${id}`, payload);
+}
+
+export async function deleteStage(id) {
+  return request('DELETE', `/pipeline-stages/${id}`);
+}
+
+export { API_BASE };

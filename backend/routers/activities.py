@@ -5,7 +5,7 @@ from typing import Optional, List
 from database import get_db
 from auth import get_current_user
 from models import Activity, Lead, User
-from schemas import ActivityCreate, ActivityResponse
+from schemas import ActivityCreate, ActivityResponse, ActivityUpdate
 
 router = APIRouter(prefix="/activities", tags=["Activities"])
 
@@ -69,3 +69,48 @@ def list_activities(
 
     query = query.order_by(Activity.created_at.desc())
     return query.offset(skip).limit(limit).all()
+
+
+# ── UPDATE ACTIVITY ───────────────────────────────────
+@router.put("/{activity_id}", response_model=ActivityResponse)
+def update_activity(
+    activity_id: int,
+    activity_in: ActivityUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+
+    # RBAC: sales_rep can only edit activities they created
+    if current_user.role == "sales_rep" and activity.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to edit this activity")
+
+    update_data = activity_in.model_dump(exclude_unset=True)
+    for field, value in update_data.items():
+        setattr(activity, field, value)
+
+    db.commit()
+    db.refresh(activity)
+    return activity
+
+
+# ── DELETE ACTIVITY ───────────────────────────────────
+@router.delete("/{activity_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_activity(
+    activity_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    activity = db.query(Activity).filter(Activity.id == activity_id).first()
+    if not activity:
+        raise HTTPException(status_code=404, detail="Activity not found")
+
+    # RBAC: sales_rep can only delete activities they created
+    if current_user.role == "sales_rep" and activity.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this activity")
+
+    db.delete(activity)
+    db.commit()
+    return None

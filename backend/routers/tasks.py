@@ -6,7 +6,7 @@ from datetime import date, datetime
 from database import get_db
 from auth import get_current_user
 from models import Task, Lead, User
-from schemas import TaskCreate, TaskResponse
+from schemas import TaskCreate, TaskResponse, TaskUpdate
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])
 
@@ -98,6 +98,37 @@ def complete_task(
 
     task.status = "done"
     task.completed_at = datetime.utcnow()
+
+    db.commit()
+    db.refresh(task)
+    return task
+
+
+# ── UPDATE TASK ───────────────────────────────────────
+@router.put("/{task_id}", response_model=TaskResponse)
+def update_task(
+    task_id: int,
+    task_in: TaskUpdate,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    task = db.query(Task).filter(Task.id == task_id).first()
+    if not task:
+        raise HTTPException(status_code=404, detail="Task not found")
+
+    # RBAC: sales_rep can only update their own tasks
+    if current_user.role == "sales_rep" and task.assigned_to != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to update this task")
+
+    update_data = task_in.model_dump(exclude_unset=True)
+    if "status" in update_data:
+        if update_data["status"] == "done" and task.status != "done":
+            task.completed_at = datetime.utcnow()
+        elif update_data["status"] != "done":
+            task.completed_at = None
+
+    for field, value in update_data.items():
+        setattr(task, field, value)
 
     db.commit()
     db.refresh(task)

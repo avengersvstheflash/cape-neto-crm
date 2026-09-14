@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Search, Plus, Phone, Mail, Instagram, X, Target } from 'lucide-react';
+import { Search, Plus, Phone, Mail, Instagram, X, Target, Edit2, Trash2 } from 'lucide-react';
 
 const STATUS_STYLES = {
   active: 'bg-indigo-50 text-indigo-700 border-indigo-200',
@@ -8,15 +8,44 @@ const STATUS_STYLES = {
   paused: 'bg-amber-50 text-amber-700 border-amber-200',
 };
 
-export default function LeadsView({ leads, onOpenLead, onCreateLead, onUpdateStatus }) {
+export default function LeadsView({
+  leads,
+  stages = [],
+  onOpenLead,
+  onCreateLead,
+  onUpdateLead,
+  onDeleteLead,
+  onUpdateStatus
+}) {
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [form, setForm] = useState({
-    instagram_handle: '', full_name: '', phone: '', email: '',
-    deal_value: '', notes: '', status: 'active',
-  });
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingLead, setEditingLead] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // Forms
+  const [createForm, setCreateForm] = useState({
+    instagram_handle: '',
+    full_name: '',
+    phone: '',
+    email: '',
+    deal_value: '',
+    notes: '',
+    status: 'active',
+    stage_id: '',
+  });
+
+  const [editForm, setEditForm] = useState({
+    full_name: '',
+    phone: '',
+    email: '',
+    deal_value: '',
+    notes: '',
+    status: 'active',
+    stage_id: '',
+  });
+
+  const stageMap = useMemo(() => Object.fromEntries(stages.map(s => [s.id, s.name])), [stages]);
 
   const filtered = useMemo(() => {
     return leads.filter(l => {
@@ -33,14 +62,60 @@ export default function LeadsView({ leads, onOpenLead, onCreateLead, onUpdateSta
     setSubmitting(true);
     try {
       await onCreateLead({
-        ...form,
-        deal_value: form.deal_value ? parseFloat(form.deal_value) : null,
+        ...createForm,
+        deal_value: createForm.deal_value ? parseFloat(createForm.deal_value) : null,
+        stage_id: createForm.stage_id ? parseInt(createForm.stage_id) : null,
       });
-      setShowModal(false);
-      setForm({ instagram_handle: '', full_name: '', phone: '', email: '', deal_value: '', notes: '', status: 'active' });
+      setShowCreateModal(false);
+      setCreateForm({
+        instagram_handle: '',
+        full_name: '',
+        phone: '',
+        email: '',
+        deal_value: '',
+        notes: '',
+        status: 'active',
+        stage_id: '',
+      });
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleStartEdit = (e, lead) => {
+    e.stopPropagation();
+    setEditingLead(lead);
+    setEditForm({
+      full_name: lead.full_name || '',
+      phone: lead.phone || '',
+      email: lead.email || '',
+      deal_value: lead.deal_value || '',
+      notes: lead.notes || '',
+      status: lead.status || 'active',
+      stage_id: lead.stage_id || '',
+    });
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editingLead) return;
+    setSubmitting(true);
+    try {
+      await onUpdateLead(editingLead.id, {
+        ...editForm,
+        deal_value: editForm.deal_value ? parseFloat(editForm.deal_value) : null,
+        stage_id: editForm.stage_id ? parseInt(editForm.stage_id) : null,
+      });
+      setEditingLead(null);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (e, leadId, handle) => {
+    e.stopPropagation();
+    if (!window.confirm(`Delete lead ${handle}? This will remove associated tasks and activity records.`)) return;
+    await onDeleteLead(leadId);
   };
 
   return (
@@ -75,7 +150,7 @@ export default function LeadsView({ leads, onOpenLead, onCreateLead, onUpdateSta
           </div>
         </div>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => setShowCreateModal(true)}
           className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-500/20 transition-all duration-200 active:scale-[0.97]"
         >
           <Plus className="w-4 h-4" />
@@ -96,40 +171,64 @@ export default function LeadsView({ leads, onOpenLead, onCreateLead, onUpdateSta
             <div
               key={lead.id}
               onClick={() => onOpenLead(lead)}
-              className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs hover:shadow-md hover:border-indigo-200 cursor-pointer transition-all duration-250 group flex flex-col"
+              className="bg-white border border-slate-200 rounded-2xl p-5 shadow-xs hover:shadow-md hover:border-indigo-200 cursor-pointer transition-all duration-250 group flex flex-col justify-between"
             >
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="min-w-0">
-                  <p className="font-bold text-indigo-600 text-[15px] group-hover:text-indigo-700 transition-colors truncate">
-                    {lead.instagram_handle}
+              <div>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="min-w-0">
+                    <p className="font-bold text-indigo-600 text-[15px] group-hover:text-indigo-700 transition-colors truncate">
+                      {lead.instagram_handle}
+                    </p>
+                    {lead.full_name && (
+                      <p className="text-sm font-medium text-slate-600 truncate">{lead.full_name}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full capitalize border whitespace-nowrap ${STATUS_STYLES[lead.status] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
+                      {lead.status}
+                    </span>
+                    <button
+                      onClick={(e) => handleStartEdit(e, lead)}
+                      className="p-1 text-slate-300 hover:text-indigo-600 transition-colors"
+                      title="Edit Lead"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(e, lead.id, lead.instagram_handle)}
+                      className="p-1 text-slate-300 hover:text-rose-600 transition-colors"
+                      title="Delete Lead"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {lead.stage_id && stageMap[lead.stage_id] && (
+                  <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">
+                    {stageMap[lead.stage_id]}
+                  </span>
+                )}
+
+                {lead.deal_value && (
+                  <p className="text-xs font-semibold text-slate-700 mt-2">
+                    Deal: <span className="text-emerald-600 font-bold">ZAR {Number(lead.deal_value).toLocaleString()}</span>
                   </p>
-                  {lead.full_name && (
-                    <p className="text-sm font-medium text-slate-600 truncate">{lead.full_name}</p>
+                )}
+
+                <div className="mt-2.5 space-y-1.5 text-xs text-slate-500">
+                  {lead.phone && (
+                    <p className="flex items-center gap-1.5"><Phone className="w-3 h-3 text-slate-400" /> {lead.phone}</p>
+                  )}
+                  {lead.email && (
+                    <p className="flex items-center gap-1.5"><Mail className="w-3 h-3 text-slate-400" /> {lead.email}</p>
+                  )}
+                  {lead.notes && (
+                    <p className="text-xs text-slate-500 italic bg-slate-50 rounded-lg px-2.5 py-1.5 mt-2 line-clamp-2 border border-slate-100">
+                      "{lead.notes}"
+                    </p>
                   )}
                 </div>
-                <span className={`text-[11px] font-bold px-2.5 py-1 rounded-full capitalize border whitespace-nowrap ${STATUS_STYLES[lead.status] || 'bg-slate-50 text-slate-600 border-slate-200'}`}>
-                  {lead.status}
-                </span>
-              </div>
-
-              {lead.deal_value && (
-                <p className="text-xs font-semibold text-slate-700 mt-1">
-                  Deal: <span className="text-emerald-600 font-bold">ZAR {Number(lead.deal_value).toLocaleString()}</span>
-                </p>
-              )}
-
-              <div className="mt-3 space-y-1.5 text-xs text-slate-500 flex-1">
-                {lead.phone && (
-                  <p className="flex items-center gap-1.5"><Phone className="w-3 h-3 text-slate-400" /> {lead.phone}</p>
-                )}
-                {lead.email && (
-                  <p className="flex items-center gap-1.5"><Mail className="w-3 h-3 text-slate-400" /> {lead.email}</p>
-                )}
-                {lead.notes && (
-                  <p className="text-xs text-slate-500 italic bg-slate-50 rounded-lg px-2.5 py-1.5 mt-2 line-clamp-2 border border-slate-100">
-                    "{lead.notes}"
-                  </p>
-                )}
               </div>
 
               <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between" onClick={(e) => e.stopPropagation()}>
@@ -153,9 +252,9 @@ export default function LeadsView({ leads, onOpenLead, onCreateLead, onUpdateSta
       )}
 
       {/* New Lead Modal */}
-      {showModal && (
-        <ModalBackdrop onClose={() => setShowModal(false)}>
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 animate-modal-enter">
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-overlay-enter" onClick={() => setShowCreateModal(false)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 animate-modal-enter" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <div className="flex items-center gap-2.5">
                 <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center">
@@ -163,57 +262,197 @@ export default function LeadsView({ leads, onOpenLead, onCreateLead, onUpdateSta
                 </div>
                 <h2 className="text-lg font-bold text-slate-900">New Instagram Lead</h2>
               </div>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition-all">
+              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition-all">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleCreate} className="space-y-4">
-              <Field label="Instagram Handle *" placeholder="@brand_or_creator" value={form.instagram_handle} onChange={v => setForm({ ...form, instagram_handle: v })} required />
-              <div className="grid grid-cols-2 gap-3">
-                <Field label="Full Name" value={form.full_name} onChange={v => setForm({ ...form, full_name: v })} />
-                <Field label="Phone" placeholder="+27 82 123 4567" value={form.phone} onChange={v => setForm({ ...form, phone: v })} />
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Instagram Handle *</label>
+                <input
+                  type="text"
+                  placeholder="@brand_or_creator"
+                  required
+                  value={createForm.instagram_handle}
+                  onChange={e => setCreateForm({ ...createForm, instagram_handle: e.target.value })}
+                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none bg-slate-50/50"
+                />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <Field label="Email" type="email" value={form.email} onChange={v => setForm({ ...form, email: v })} />
-                <Field label="Est. Value (ZAR)" type="number" placeholder="25000" value={form.deal_value} onChange={v => setForm({ ...form, deal_value: v })} />
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Full Name</label>
+                  <input
+                    type="text"
+                    value={createForm.full_name}
+                    onChange={e => setCreateForm({ ...createForm, full_name: e.target.value })}
+                    className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50/50 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Phone</label>
+                  <input
+                    type="text"
+                    placeholder="+27 82 123 4567"
+                    value={createForm.phone}
+                    onChange={e => setCreateForm({ ...createForm, phone: e.target.value })}
+                    className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50/50 focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={createForm.email}
+                    onChange={e => setCreateForm({ ...createForm, email: e.target.value })}
+                    className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50/50 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Estimated Value (ZAR)</label>
+                  <input
+                    type="number"
+                    placeholder="25000"
+                    value={createForm.deal_value}
+                    onChange={e => setCreateForm({ ...createForm, deal_value: e.target.value })}
+                    className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50/50 focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Pipeline Stage</label>
+                <select
+                  value={createForm.stage_id}
+                  onChange={e => setCreateForm({ ...createForm, stage_id: e.target.value })}
+                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 bg-white focus:outline-none"
+                >
+                  <option value="">— Unassigned —</option>
+                  {stages.map(s => (
+                    <option key={s.id} value={s.id}>{s.name}</option>
+                  ))}
+                </select>
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Notes</label>
-                <textarea rows="2" placeholder="Context from DM conversation..." value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
-                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:outline-none transition-all bg-slate-50/50" />
+                <textarea
+                  rows="2"
+                  placeholder="Context from DM conversation..."
+                  value={createForm.notes}
+                  onChange={e => setCreateForm({ ...createForm, notes: e.target.value })}
+                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none bg-slate-50/50"
+                />
               </div>
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all">Cancel</button>
+                <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-xl transition-all">Cancel</button>
                 <button type="submit" disabled={submitting}
-                  className="px-5 py-2 text-sm bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:from-indigo-400 disabled:to-violet-400 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20 active:scale-[0.97]">
+                  className="px-5 py-2 text-sm bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20 active:scale-[0.97]">
                   {submitting ? 'Saving...' : 'Save Lead'}
                 </button>
               </div>
             </form>
           </div>
-        </ModalBackdrop>
+        </div>
+      )}
+
+      {/* Edit Lead Modal */}
+      {editingLead && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-overlay-enter" onClick={() => setEditingLead(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 animate-modal-enter" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-bold text-slate-900">Edit Lead ({editingLead.instagram_handle})</h2>
+              <button onClick={() => setEditingLead(null)} className="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEdit} className="space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Full Name</label>
+                  <input
+                    type="text"
+                    value={editForm.full_name}
+                    onChange={e => setEditForm({ ...editForm, full_name: e.target.value })}
+                    className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Phone</label>
+                  <input
+                    type="text"
+                    value={editForm.phone}
+                    onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
+                    className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={editForm.email}
+                    onChange={e => setEditForm({ ...editForm, email: e.target.value })}
+                    className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Estimated Value (ZAR)</label>
+                  <input
+                    type="number"
+                    value={editForm.deal_value}
+                    onChange={e => setEditForm({ ...editForm, deal_value: e.target.value })}
+                    className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:outline-none"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Status</label>
+                  <select
+                    value={editForm.status}
+                    onChange={e => setEditForm({ ...editForm, status: e.target.value })}
+                    className="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 bg-white focus:outline-none"
+                  >
+                    <option value="active">Active</option>
+                    <option value="won">Won</option>
+                    <option value="paused">Paused</option>
+                    <option value="lost">Lost</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Pipeline Stage</label>
+                  <select
+                    value={editForm.stage_id}
+                    onChange={e => setEditForm({ ...editForm, stage_id: e.target.value })}
+                    className="w-full text-xs border border-slate-200 rounded-xl px-3 py-2 bg-white focus:outline-none"
+                  >
+                    <option value="">— Unassigned —</option>
+                    {stages.map(s => (
+                      <option key={s.id} value={s.id}>{s.name}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase mb-1">Notes</label>
+                <textarea
+                  rows="2"
+                  value={editForm.notes}
+                  onChange={e => setEditForm({ ...editForm, notes: e.target.value })}
+                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 bg-slate-50 focus:outline-none"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button type="button" onClick={() => setEditingLead(null)} className="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-xl">Cancel</button>
+                <button type="submit" disabled={submitting} className="px-5 py-2 text-sm bg-indigo-600 text-white rounded-xl font-semibold shadow-md">
+                  {submitting ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </div>
   );
 }
-
-function Field({ label, value, onChange, type = 'text', placeholder = '', required = false }) {
-  return (
-    <div>
-      <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">{label}</label>
-      <input type={type} value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder} required={required}
-        className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400 focus:outline-none transition-all bg-slate-50/50" />
-    </div>
-  );
-}
-
-function ModalBackdrop({ children, onClose }) {
-  return (
-    <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-overlay-enter" onClick={onClose}>
-      <div onClick={e => e.stopPropagation()}>
-        {children}
-      </div>
-    </div>
-  );
-}
-

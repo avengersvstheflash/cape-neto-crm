@@ -42,7 +42,7 @@ def create_client(
 @router.get("/", response_model=List[ClientOut])
 def list_clients(
     db: Session = Depends(get_db),
-    current_user=Depends(require_admin)
+    current_user=Depends(get_current_user)
 ):
     return db.query(Client).all()
 
@@ -80,3 +80,19 @@ def update_client(
     db.commit()
     db.refresh(client)
     return client
+
+
+# ── DELETE /clients/{id} ──────────────────────────────────────────────────────
+@router.delete("/{client_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_client(
+    client_id: int,
+    db: Session = Depends(get_db),
+    current_user=Depends(require_admin)
+):
+    client = db.query(Client).filter(Client.id == client_id).first()
+    if not client:
+        raise HTTPException(status_code=404, detail="Client not found")
+
+    db.delete(client)
+    db.commit()
+    return None

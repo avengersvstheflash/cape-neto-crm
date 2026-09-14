@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { CheckCircle2, Clock, Plus, AlertTriangle, X } from 'lucide-react';
+import { CheckCircle2, Clock, Plus, AlertTriangle, X, Edit2, Trash2 } from 'lucide-react';
 
 const PRIORITY_STYLES = {
   urgent: 'bg-rose-100 text-rose-700 border-rose-200',
@@ -8,12 +8,36 @@ const PRIORITY_STYLES = {
   low: 'bg-slate-50 text-slate-500 border-slate-100',
 };
 
-export default function TasksView({ tasks, leads, onCompleteTask, onCreateTask, onOpenLead }) {
-  const [showModal, setShowModal] = useState(false);
+export default function TasksView({
+  tasks,
+  leads,
+  onCompleteTask,
+  onCreateTask,
+  onUpdateTask,
+  onDeleteTask,
+  onOpenLead
+}) {
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [editingTask, setEditingTask] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [form, setForm] = useState({
-    title: '', description: '', lead_id: '', due_date: new Date().toISOString().split('T')[0],
-    priority: 'medium', task_type: 'follow_up',
+
+  // Form states
+  const [createForm, setCreateForm] = useState({
+    title: '',
+    description: '',
+    lead_id: '',
+    due_date: new Date().toISOString().split('T')[0],
+    priority: 'medium',
+    task_type: 'follow_up',
+  });
+
+  const [editForm, setEditForm] = useState({
+    title: '',
+    description: '',
+    due_date: '',
+    priority: 'medium',
+    task_type: 'follow_up',
+    status: 'pending',
   });
 
   const leadMap = useMemo(() => Object.fromEntries(leads.map(l => [l.id, l])), [leads]);
@@ -21,10 +45,8 @@ export default function TasksView({ tasks, leads, onCompleteTask, onCreateTask, 
 
   const sortedTasks = useMemo(() => {
     return [...tasks].sort((a, b) => {
-      // Pending first, then done
       if (a.status === 'done' && b.status !== 'done') return 1;
       if (a.status !== 'done' && b.status === 'done') return -1;
-      // By priority
       const prio = { urgent: 0, high: 1, medium: 2, low: 3 };
       return (prio[a.priority] || 2) - (prio[b.priority] || 2);
     });
@@ -34,20 +56,56 @@ export default function TasksView({ tasks, leads, onCompleteTask, onCreateTask, 
     e.preventDefault();
     setSubmitting(true);
     try {
-      await onCreateTask({ ...form, lead_id: parseInt(form.lead_id) });
-      setShowModal(false);
-      setForm({ title: '', description: '', lead_id: '', due_date: new Date().toISOString().split('T')[0], priority: 'medium', task_type: 'follow_up' });
+      await onCreateTask({ ...createForm, lead_id: parseInt(createForm.lead_id) });
+      setShowCreateModal(false);
+      setCreateForm({
+        title: '',
+        description: '',
+        lead_id: '',
+        due_date: new Date().toISOString().split('T')[0],
+        priority: 'medium',
+        task_type: 'follow_up',
+      });
     } finally {
       setSubmitting(false);
     }
   };
 
+  const handleStartEdit = (task) => {
+    setEditingTask(task);
+    setEditForm({
+      title: task.title || '',
+      description: task.description || '',
+      due_date: task.due_date || '',
+      priority: task.priority || 'medium',
+      task_type: task.task_type || 'follow_up',
+      status: task.status || 'pending',
+    });
+  };
+
+  const handleSaveEdit = async (e) => {
+    e.preventDefault();
+    if (!editingTask) return;
+    setSubmitting(true);
+    try {
+      await onUpdateTask(editingTask.id, editForm);
+      setEditingTask(null);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDelete = async (taskId) => {
+    if (!window.confirm('Are you sure you want to delete this task?')) return;
+    await onDeleteTask(taskId);
+  };
+
   return (
     <div className="animate-view-enter">
       <div className="flex justify-between items-center mb-5">
-        <p className="text-sm text-slate-500">Follow-ups and action items requiring attention.</p>
+        <p className="text-sm text-slate-500">Action items and scheduled follow-ups across all agency leads.</p>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => setShowCreateModal(true)}
           className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-500/20 transition-all duration-200 active:scale-[0.97]"
         >
           <Plus className="w-4 h-4" />
@@ -59,7 +117,7 @@ export default function TasksView({ tasks, leads, onCompleteTask, onCreateTask, 
         <div className="bg-white rounded-2xl border border-slate-200 p-16 text-center">
           <CheckCircle2 className="w-12 h-12 mx-auto text-slate-200 mb-3" />
           <p className="font-semibold text-slate-600 text-base">No tasks registered</p>
-          <p className="text-sm text-slate-400 mt-1">Schedule a follow-up task to get started.</p>
+          <p className="text-sm text-slate-400 mt-1">Schedule a follow-up task to begin tracking execution.</p>
         </div>
       ) : (
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-xs divide-y divide-slate-100">
@@ -120,8 +178,8 @@ export default function TasksView({ tasks, leads, onCompleteTask, onCreateTask, 
                   </div>
                 </div>
 
-                {/* Action */}
-                <div className="flex-shrink-0">
+                {/* Actions */}
+                <div className="flex items-center gap-2 flex-shrink-0">
                   {isDone ? (
                     <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
                       Done
@@ -134,6 +192,20 @@ export default function TasksView({ tasks, leads, onCompleteTask, onCreateTask, 
                       Complete
                     </button>
                   )}
+                  <button
+                    onClick={() => handleStartEdit(task)}
+                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors"
+                    title="Edit Task"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(task.id)}
+                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                    title="Delete Task"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
                 </div>
               </div>
             );
@@ -141,20 +213,99 @@ export default function TasksView({ tasks, leads, onCompleteTask, onCreateTask, 
         </div>
       )}
 
-      {/* New Task Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-overlay-enter" onClick={() => setShowModal(false)}>
+      {/* Edit Task Modal */}
+      {editingTask && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-overlay-enter" onClick={() => setEditingTask(null)}>
+          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 animate-modal-enter" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-lg font-bold text-slate-900">Edit Task</h2>
+              <button onClick={() => setEditingTask(null)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition-all">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <form onSubmit={handleSaveEdit} className="space-y-4">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Task Title *</label>
+                <input
+                  type="text"
+                  value={editForm.title}
+                  onChange={e => setEditForm({ ...editForm, title: e.target.value })}
+                  required
+                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none bg-slate-50/50"
+                />
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Due Date</label>
+                  <input
+                    type="date"
+                    value={editForm.due_date}
+                    onChange={e => setEditForm({ ...editForm, due_date: e.target.value })}
+                    className="w-full text-xs border border-slate-200 rounded-xl px-2 py-2 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Priority</label>
+                  <select
+                    value={editForm.priority}
+                    onChange={e => setEditForm({ ...editForm, priority: e.target.value })}
+                    className="w-full text-xs border border-slate-200 rounded-xl px-2 py-2 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none bg-white"
+                  >
+                    <option value="low">Low</option>
+                    <option value="medium">Medium</option>
+                    <option value="high">High</option>
+                    <option value="urgent">Urgent</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Status</label>
+                  <select
+                    value={editForm.status}
+                    onChange={e => setEditForm({ ...editForm, status: e.target.value })}
+                    className="w-full text-xs border border-slate-200 rounded-xl px-2 py-2 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none bg-white"
+                  >
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="done">Done</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Description</label>
+                <textarea
+                  rows="2"
+                  value={editForm.description}
+                  onChange={e => setEditForm({ ...editForm, description: e.target.value })}
+                  className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none bg-slate-50/50"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                <button type="button" onClick={() => setEditingTask(null)} className="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-xl transition-all">Cancel</button>
+                <button type="submit" disabled={submitting}
+                  className="px-5 py-2 text-sm bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20 active:scale-[0.97]">
+                  {submitting ? 'Saving...' : 'Save Changes'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Schedule Task Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-overlay-enter" onClick={() => setShowCreateModal(false)}>
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 border border-slate-200 animate-modal-enter" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-bold text-slate-900">Schedule Follow-up Task</h2>
-              <button onClick={() => setShowModal(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition-all">
+              <button onClick={() => setShowCreateModal(false)} className="text-slate-400 hover:text-slate-600 p-1 hover:bg-slate-100 rounded-lg transition-all">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Assign to Lead *</label>
-                <select value={form.lead_id} onChange={e => setForm({ ...form, lead_id: e.target.value })} required
+                <select value={createForm.lead_id} onChange={e => setCreateForm({ ...createForm, lead_id: e.target.value })} required
                   className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none bg-white">
                   <option value="">— Select lead —</option>
                   {leads.map(l => (
@@ -164,18 +315,18 @@ export default function TasksView({ tasks, leads, onCompleteTask, onCreateTask, 
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Task Title *</label>
-                <input type="text" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required placeholder="Send pricing brochure"
+                <input type="text" value={createForm.title} onChange={e => setCreateForm({ ...createForm, title: e.target.value })} required placeholder="Send pricing brochure"
                   className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none bg-slate-50/50" />
               </div>
               <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Due Date</label>
-                  <input type="date" value={form.due_date} onChange={e => setForm({ ...form, due_date: e.target.value })}
+                  <input type="date" value={createForm.due_date} onChange={e => setCreateForm({ ...createForm, due_date: e.target.value })}
                     className="w-full text-xs border border-slate-200 rounded-xl px-2 py-2 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none" />
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Priority</label>
-                  <select value={form.priority} onChange={e => setForm({ ...form, priority: e.target.value })}
+                  <select value={createForm.priority} onChange={e => setCreateForm({ ...createForm, priority: e.target.value })}
                     className="w-full text-xs border border-slate-200 rounded-xl px-2 py-2 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none bg-white">
                     <option value="low">Low</option>
                     <option value="medium">Medium</option>
@@ -185,7 +336,7 @@ export default function TasksView({ tasks, leads, onCompleteTask, onCreateTask, 
                 </div>
                 <div>
                   <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Type</label>
-                  <select value={form.task_type} onChange={e => setForm({ ...form, task_type: e.target.value })}
+                  <select value={createForm.task_type} onChange={e => setCreateForm({ ...createForm, task_type: e.target.value })}
                     className="w-full text-xs border border-slate-200 rounded-xl px-2 py-2 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none bg-white">
                     <option value="follow_up">Follow Up</option>
                     <option value="call">Call</option>
@@ -197,11 +348,11 @@ export default function TasksView({ tasks, leads, onCompleteTask, onCreateTask, 
               </div>
               <div>
                 <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Description</label>
-                <textarea rows="2" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}
+                <textarea rows="2" value={createForm.description} onChange={e => setCreateForm({ ...createForm, description: e.target.value })}
                   className="w-full text-sm border border-slate-200 rounded-xl px-3 py-2 focus:ring-2 focus:ring-indigo-500/30 focus:outline-none bg-slate-50/50" />
               </div>
               <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-xl transition-all">Cancel</button>
+                <button type="button" onClick={() => setShowCreateModal(false)} className="px-4 py-2 text-sm text-slate-500 hover:bg-slate-100 rounded-xl transition-all">Cancel</button>
                 <button type="submit" disabled={submitting}
                   className="px-5 py-2 text-sm bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 disabled:opacity-50 text-white rounded-xl font-semibold transition-all shadow-lg shadow-indigo-500/20 active:scale-[0.97]">
                   {submitting ? 'Scheduling...' : 'Schedule Task'}
@@ -214,4 +365,3 @@ export default function TasksView({ tasks, leads, onCompleteTask, onCreateTask, 
     </div>
   );
 }
-

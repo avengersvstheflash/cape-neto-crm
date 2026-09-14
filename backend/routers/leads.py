@@ -120,3 +120,22 @@ def update_lead(
     db.commit()
     db.refresh(lead)
     return lead
+
+
+# ── DELETE LEAD ───────────────────────────────────────
+@router.delete("/{lead_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_lead(
+    lead_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    lead = db.query(Lead).filter(Lead.id == lead_id).first()
+    if not lead:
+        raise HTTPException(status_code=404, detail="Lead not found")
+
+    if current_user.role == "sales_rep" and lead.assigned_to != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this lead")
+
+    db.delete(lead)
+    db.commit()
+    return None

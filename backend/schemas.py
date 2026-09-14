@@ -43,6 +43,12 @@ class PipelineStageResponse(BaseSchema):
     auto_tasks: Optional[str] = None
     created_at: datetime
 
+class PipelineStageUpdate(BaseSchema):
+    name: Optional[str] = None
+    position: Optional[int] = None
+    auto_tasks: Optional[str] = None
+
+
 
 # ── LEAD SCHEMAS ──────────────────────────────────────
 class LeadCreate(BaseSchema):
@@ -111,6 +117,15 @@ class TaskResponse(BaseSchema):
     created_at: datetime
     completed_at: Optional[datetime] = None
 
+class TaskUpdate(BaseSchema):
+    title: Optional[str] = None
+    description: Optional[str] = None
+    task_type: Optional[str] = None
+    due_date: Optional[date] = None
+    priority: Optional[str] = None
+    status: Optional[str] = None
+    assigned_to: Optional[int] = None
+
 
 # ── ACTIVITY SCHEMAS ──────────────────────────────────
 class ActivityCreate(BaseSchema):
@@ -128,6 +143,12 @@ class ActivityResponse(BaseSchema):
     lead_id: int
     user_id: Optional[int] = None
     created_at: datetime
+
+class ActivityUpdate(BaseSchema):
+    action_type: Optional[str] = None
+    description: Optional[str] = None
+    activity_metadata: Optional[str] = None
+
 
 
 # ── DEAL SCHEMAS ──────────────────────────────────────
