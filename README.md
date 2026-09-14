@@ -15,7 +15,7 @@
 
 Cape Neto is a South African creative and digital marketing agency acquiring clients primarily through Instagram direct messages and social discovery. Off-the-shelf enterprise CRMs (Salesforce, HubSpot) proved excessively complex, costly, and disconnected from Instagram direct messaging workflows.
 
-This project delivers an **Instagram-native CRM**: a secure, high-throughput REST API with row-level Role-Based Access Control (RBAC), automatic Instagram handle normalization, follow-up task orchestration, client account tracking, and a lightweight operational single-page application.
+This project delivers an **Instagram-native CRM**: a secure, high-throughput REST API with row-level Role-Based Access Control (RBAC), automatic Instagram handle normalization, follow-up task orchestration, client account tracking, and a lightweight, fluid operational workspace.
 
 ---
 
@@ -61,7 +61,7 @@ This project delivers an **Instagram-native CRM**: a secure, high-throughput RES
 | **Persistence & ORM** | SQLAlchemy 2.0 | Declarative relational mappings, explicit query execution, and database dialect portability. |
 | **Schema Migrations** | Alembic (Batch Mode) | Version-controlled DDL tracking; enabled `render_as_batch=True` to execute constraint updates safely on SQLite without data truncation. |
 | **Authentication & RBAC** | Stateless JWT (`python-jose`) + `bcrypt` | Secure password hashing with salt generation, token-based session verification, and granular role enforcement. |
-| **Frontend UI** | React + Vite + Tailwind CSS | Zero-bloat, single-page operational workspace communicating via standard `fetch()` API calls. |
+| **Frontend UI** | React + Vite + Tailwind CSS + Recharts | Fluid component architecture with analytics charts, slide-over detail panels, and CSS cubic-bezier transitions. |
 
 ---
 
@@ -96,6 +96,11 @@ Access control is enforced at the dependency injection level in FastAPI, ensurin
 ### 4. Client & Account Directory
 - Dedicated `Client` model tracking agency client plans (`starter`, `growth`, `pro`, `enterprise`), subscription statuses (`active`, `paused`, `churned`, `trial`), and renewal milestones.
 
+### 5. Fluid Operational Workspace (Frontend)
+- **Analytics Dashboard**: Pipeline funnel, lead source distribution donut, revenue pipeline (ZAR), and task progress charts powered by Recharts.
+- **Interconnected Slide-over**: Click any lead to slide out full details, linked tasks, activity history, and inline activity logging.
+- **Micro-interactions**: Counting KPI counters, animated toast notifications, and smooth tab transitions.
+
 ---
 
 ## Architectural Specifications & Future Extensions
@@ -114,7 +119,7 @@ The data schema is forward-compatible and intentionally designed for horizontal 
 - Node.js 18+ (for frontend dashboard)
 - Git
 
-### 1. Clone & Setup Backend
+### 1. Setup & Start Backend
 ```bash
 # Clone the repository
 git clone https://github.com/avengersvstheflash/cape-neto-crm.git
@@ -128,17 +133,15 @@ source venv/bin/activate     # macOS / Linux
 # Install dependencies
 pip install -r requirements.txt
 
-# Run migrations
+# Run migrations & seed demo data
 python -m alembic upgrade head
-
-# Seed realistic demo data
 python seed.py
 
 # Start API server
 uvicorn main:app --reload --port 8000
 ```
 
-Interactive API documentation will be immediately accessible at **[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)**.
+Interactive API documentation: **[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)**.
 
 ### 2. Seeded Test Credentials
 | Role | Email | Password | Access Level |
@@ -158,7 +161,7 @@ cd ../frontend
 npm install
 npm run dev
 ```
-Open **[http://localhost:5173](http://localhost:5173)** in your browser to interact with the operational UI. Click the **👤 Admin User** or **💼 Sales Rep** quick-login buttons to test live data immediately.
+Open **[http://localhost:5173](http://localhost:5173)** in your browser. Click the **👤 Admin** or **💼 Sales Rep** quick-login buttons to test live data immediately.
 
 ---
 
