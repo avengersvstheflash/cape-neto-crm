@@ -97,6 +97,7 @@ export default function ClientsView({
     await onDeleteClient(clientId);
   };
 
+  const canMutate = !currentUser || currentUser.role === 'admin';
   const canMutate = currentUser?.role === 'admin';
 
   return (

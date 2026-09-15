@@ -151,6 +151,9 @@ def delete_lead(
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
 
+    if current_user.role == "sales_rep" and lead.assigned_to != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this lead")
+
     db.delete(lead)
     db.commit()
     return None

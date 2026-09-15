@@ -126,6 +126,10 @@ def delete_activity(
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
 
+    # RBAC: sales_rep can only delete activities they created
+    if current_user.role == "sales_rep" and activity.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this activity")
+
     db.delete(activity)
     db.commit()
     return None

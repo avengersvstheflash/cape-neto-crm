@@ -171,6 +171,10 @@ def delete_task(
     if not task:
         raise HTTPException(status_code=404, detail="Task not found")
 
+    # RBAC: sales_rep can only delete their own tasks
+    if current_user.role == "sales_rep" and task.assigned_to != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to delete this task")
+
     db.delete(task)
     db.commit()
     return None
