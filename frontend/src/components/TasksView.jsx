@@ -15,11 +15,17 @@ export default function TasksView({
   onCreateTask,
   onUpdateTask,
   onDeleteTask,
-  onOpenLead
+  onOpenLead,
+  currentUser
 }) {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingTask, setEditingTask] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  const isAdmin = currentUser?.role === 'admin';
+  const isViewer = currentUser?.role === 'viewer';
+  const isSalesRep = currentUser?.role === 'sales_rep';
+  const canCreateTask = !isViewer;
 
   // Form states
   const [createForm, setCreateForm] = useState({
@@ -104,13 +110,15 @@ export default function TasksView({
     <div className="animate-view-enter">
       <div className="flex justify-between items-center mb-5">
         <p className="text-sm text-slate-500">Action items and scheduled follow-ups across all agency leads.</p>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-500/20 transition-all duration-200 active:scale-[0.97]"
-        >
-          <Plus className="w-4 h-4" />
-          Schedule Task
-        </button>
+        {canCreateTask && (
+          <button
+            onClick={() => setShowCreateModal(true)}
+            className="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-700 hover:to-violet-700 text-white text-sm font-semibold px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-lg shadow-indigo-500/20 transition-all duration-200 active:scale-[0.97]"
+          >
+            <Plus className="w-4 h-4" />
+            Schedule Task
+          </button>
+        )}
       </div>
 
       {sortedTasks.length === 0 ? (
@@ -125,22 +133,35 @@ export default function TasksView({
             const isDone = task.status === 'done';
             const isOverdue = !isDone && task.due_date && task.due_date < today;
             const lead = leadMap[task.lead_id];
+            const canCompleteThis = !isViewer && (isAdmin || (isSalesRep && task.assigned_to === currentUser?.id));
+            const canEditThis = !isViewer && (isAdmin || (isSalesRep && task.assigned_to === currentUser?.id));
+            const canDeleteThis = isAdmin;
 
             return (
               <div key={task.id} className={`px-5 py-4 flex items-center gap-4 transition-all duration-200 ${isDone ? 'bg-slate-50/50' : 'hover:bg-slate-50/50'}`}>
                 {/* Complete Toggle */}
-                <button
-                  onClick={() => !isDone && onCompleteTask(task.id)}
-                  disabled={isDone}
-                  className={`rounded-xl p-2 transition-all duration-200 flex-shrink-0 ${
-                    isDone
-                      ? 'text-emerald-500 bg-emerald-50 cursor-default'
-                      : 'text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 active:scale-90'
-                  }`}
-                  title={isDone ? 'Completed' : 'Mark done'}
-                >
-                  <CheckCircle2 className="w-5 h-5" />
-                </button>
+                {canCompleteThis ? (
+                  <button
+                    onClick={() => !isDone && onCompleteTask(task.id)}
+                    disabled={isDone}
+                    className={`rounded-xl p-2 transition-all duration-200 flex-shrink-0 ${
+                      isDone
+                        ? 'text-emerald-500 bg-emerald-50 cursor-default'
+                        : 'text-slate-300 hover:text-indigo-600 hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 active:scale-90'
+                    }`}
+                    title={isDone ? 'Completed' : 'Mark done'}
+                  >
+                    <CheckCircle2 className="w-5 h-5" />
+                  </button>
+                ) : (
+                  <div
+                    className={`rounded-xl p-2 flex-shrink-0 ${
+                      isDone ? 'text-emerald-500 bg-emerald-50' : 'text-slate-300'
+                    }`}
+                  >
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                )}
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
@@ -184,28 +205,36 @@ export default function TasksView({
                     <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200">
                       Done
                     </span>
-                  ) : (
+                  ) : canCompleteThis ? (
                     <button
                       onClick={() => onCompleteTask(task.id)}
                       className="text-[11px] font-semibold bg-indigo-50 text-indigo-700 hover:bg-indigo-100 px-3 py-1.5 rounded-xl border border-indigo-200 transition-all duration-150 active:scale-95"
                     >
                       Complete
                     </button>
+                  ) : (
+                    <span className="text-[11px] font-medium text-slate-400 bg-slate-50 px-3 py-1.5 rounded-xl">
+                      Pending
+                    </span>
                   )}
-                  <button
-                    onClick={() => handleStartEdit(task)}
-                    className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors"
-                    title="Edit Task"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(task.id)}
-                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-                    title="Delete Task"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                  {canEditThis && (
+                    <button
+                      onClick={() => handleStartEdit(task)}
+                      className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-slate-100 rounded-lg transition-colors"
+                      title="Edit Task"
+                    >
+                      <Edit2 className="w-4 h-4" />
+                    </button>
+                  )}
+                  {canDeleteThis && (
+                    <button
+                      onClick={() => handleDelete(task.id)}
+                      className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                      title="Delete Task"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  )}
                 </div>
               </div>
             );

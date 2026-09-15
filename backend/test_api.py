@@ -244,3 +244,100 @@ def test_lead_delete():
     get_res = client.get(f"/leads/{lead_id}", headers=headers)
     assert get_res.status_code == 404
 
+def test_viewer_mutation_forbidden():
+    # Login as auditor (role: viewer)
+    viewer_login = client.post("/auth/login", data={"username": "auditor@capeneto.com", "password": "viewer123"})
+    assert viewer_login.status_code == 200
+    token = viewer_login.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Fetch an existing lead and task to test on
+    leads = client.get("/leads/", headers=headers).json()
+    assert len(leads) >= 1
+    lead_id = leads[0]["id"]
+
+    tasks = client.get("/tasks/", headers=headers).json()
+    assert len(tasks) >= 1
+    task_id = tasks[0]["id"]
+
+    activities = client.get("/activities/", headers=headers).json()
+    assert len(activities) >= 1
+    act_id = activities[0]["id"]
+
+    # 1. Lead mutations
+    create_lead_res = client.post("/leads/", headers=headers, json={
+        "instagram_handle": "should_fail_viewer",
+        "full_name": "Viewer Lead Fail"
+    })
+    assert create_lead_res.status_code == 403
+
+    update_lead_res = client.put(f"/leads/{lead_id}", headers=headers, json={"notes": "Hacked"})
+    assert update_lead_res.status_code == 403
+
+    delete_lead_res = client.delete(f"/leads/{lead_id}", headers=headers)
+    assert delete_lead_res.status_code == 403
+
+    # 2. Task mutations
+    create_task_res = client.post("/tasks/", headers=headers, json={
+        "title": "Viewer task fail",
+        "lead_id": lead_id
+    })
+    assert create_task_res.status_code == 403
+
+    update_task_res = client.put(f"/tasks/{task_id}", headers=headers, json={"title": "Hacked"})
+    assert update_task_res.status_code == 403
+
+    complete_task_res = client.put(f"/tasks/{task_id}/complete", headers=headers)
+    assert complete_task_res.status_code == 403
+
+    delete_task_res = client.delete(f"/tasks/{task_id}", headers=headers)
+    assert delete_task_res.status_code == 403
+
+    # 3. Activity mutations
+    create_act_res = client.post("/activities/", headers=headers, json={
+        "lead_id": lead_id,
+        "action_type": "note_added",
+        "description": "Viewer note fail"
+    })
+    assert create_act_res.status_code == 403
+
+    update_act_res = client.put(f"/activities/{act_id}", headers=headers, json={"description": "Hacked"})
+    assert update_act_res.status_code == 403
+
+    delete_act_res = client.delete(f"/activities/{act_id}", headers=headers)
+    assert delete_act_res.status_code == 403
+
+
+def test_sales_rep_delete_forbidden():
+    # Login as sales rep (role: sales_rep)
+    rep_login = client.post("/auth/login", data={"username": "sarah.rep@capeneto.com", "password": "rep123"})
+    assert rep_login.status_code == 200
+    token = rep_login.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # Fetch leads and tasks
+    leads = client.get("/leads/", headers=headers).json()
+    assert len(leads) >= 1
+    lead_id = leads[0]["id"]
+
+    tasks = client.get("/tasks/", headers=headers).json()
+    assert len(tasks) >= 1
+    task_id = tasks[0]["id"]
+
+    activities = client.get("/activities/", headers=headers).json()
+    assert len(activities) >= 1
+    act_id = activities[0]["id"]
+
+    # Sales rep cannot delete leads
+    del_lead = client.delete(f"/leads/{lead_id}", headers=headers)
+    assert del_lead.status_code == 403
+
+    # Sales rep cannot delete tasks
+    del_task = client.delete(f"/tasks/{task_id}", headers=headers)
+    assert del_task.status_code == 403
+
+    # Sales rep cannot delete activities
+    del_act = client.delete(f"/activities/{act_id}", headers=headers)
+    assert del_act.status_code == 403
+
+

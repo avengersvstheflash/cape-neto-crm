@@ -23,10 +23,13 @@ const ACTION_CONFIG = {
 
 const DEFAULT_CONFIG = { icon: Activity, color: 'bg-slate-50 text-slate-600', label: 'Activity' };
 
-export default function ActivityView({ activities, leads, onOpenLead, onUpdateActivity, onDeleteActivity }) {
+export default function ActivityView({ activities, leads, onOpenLead, onUpdateActivity, onDeleteActivity, currentUser }) {
   const [editingActivity, setEditingActivity] = useState(null);
   const [editText, setEditText] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const isAdmin = currentUser?.role === 'admin';
+  const isViewer = currentUser?.role === 'viewer';
 
   const leadMap = useMemo(() => Object.fromEntries(leads.map(l => [l.id, l])), [leads]);
 
@@ -72,6 +75,8 @@ export default function ActivityView({ activities, leads, onOpenLead, onUpdateAc
               const Icon = config.icon;
               const lead = leadMap[act.lead_id];
               const isLast = idx === activities.length - 1;
+              const canEditThis = !isViewer && (isAdmin || (currentUser?.role === 'sales_rep' && act.user_id === currentUser?.id));
+              const canDeleteThis = isAdmin;
 
               return (
                 <div key={act.id} className="relative flex gap-4 px-5 py-4 hover:bg-slate-50/50 transition-colors duration-150 group">
@@ -98,20 +103,24 @@ export default function ActivityView({ activities, leads, onOpenLead, onUpdateAc
                         </button>
                       )}
                       <span className="text-[11px] text-slate-400 ml-auto whitespace-nowrap">{timeAgo(act.created_at)}</span>
-                      <button
-                        onClick={() => handleStartEdit(act)}
-                        className="p-1 text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-all"
-                        title="Edit Description"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(act.id)}
-                        className="p-1 text-slate-300 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-all"
-                        title="Delete Activity"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {canEditThis && (
+                        <button
+                          onClick={() => handleStartEdit(act)}
+                          className="p-1 text-slate-300 hover:text-indigo-600 opacity-0 group-hover:opacity-100 transition-all"
+                          title="Edit Description"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      {canDeleteThis && (
+                        <button
+                          onClick={() => handleDelete(act.id)}
+                          className="p-1 text-slate-300 hover:text-rose-600 opacity-0 group-hover:opacity-100 transition-all"
+                          title="Delete Activity"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                     {act.description && (
                       <p className="text-sm text-slate-600 mt-1">{act.description}</p>

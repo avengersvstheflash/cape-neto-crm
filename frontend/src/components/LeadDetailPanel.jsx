@@ -22,11 +22,20 @@ function timeAgo(dateStr) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh, addToast }) {
+export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh, addToast, currentUser }) {
   const [visible, setVisible] = useState(false);
   const [linkedTasks, setLinkedTasks] = useState([]);
   const [linkedActivities, setLinkedActivities] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  const isAdmin = currentUser?.role === 'admin';
+  const isViewer = currentUser?.role === 'viewer';
+  const isSalesRep = currentUser?.role === 'sales_rep';
+
+  const canEditLead = !isViewer && (isAdmin || (isSalesRep && lead?.assigned_to === currentUser?.id));
+  const canDeleteLead = isAdmin;
+  const canCreateTask = !isViewer && (isAdmin || (isSalesRep && lead?.assigned_to === currentUser?.id));
+  const canCreateActivity = !isViewer && (isAdmin || (isSalesRep && lead?.assigned_to === currentUser?.id));
 
   // Edit Lead State
   const [isEditingLead, setIsEditingLead] = useState(false);
@@ -265,20 +274,24 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-lg font-bold text-indigo-600 truncate">{lead.instagram_handle}</span>
-              <button
-                onClick={() => setIsEditingLead(!isEditingLead)}
-                title="Edit Lead Details"
-                className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={handleDeleteLead}
-                title="Delete Lead"
-                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
+              {canEditLead && (
+                <button
+                  onClick={() => setIsEditingLead(!isEditingLead)}
+                  title="Edit Lead Details"
+                  className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                >
+                  <Edit2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+              {canDeleteLead && (
+                <button
+                  onClick={handleDeleteLead}
+                  title="Delete Lead"
+                  className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
             {lead.full_name && <p className="text-sm font-medium text-slate-600 mt-0.5">{lead.full_name}</p>}
             <div className="flex items-center gap-2 mt-2">
@@ -378,16 +391,18 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
               <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 Tasks ({linkedTasks.length})
               </h4>
-              <button
-                onClick={() => setShowTaskForm(!showTaskForm)}
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors"
-              >
-                <Plus className="w-3 h-3" /> Schedule Task
-              </button>
+              {canCreateTask && (
+                <button
+                  onClick={() => setShowTaskForm(!showTaskForm)}
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors"
+                >
+                  <Plus className="w-3 h-3" /> Schedule Task
+                </button>
+              )}
             </div>
 
             {/* Quick Task Creation */}
-            {showTaskForm && (
+            {canCreateTask && showTaskForm && (
               <form onSubmit={handleCreateTask} className="bg-indigo-50/40 border border-indigo-200 rounded-2xl p-3 mb-3 space-y-2 animate-view-enter">
                 <input
                   type="text"
@@ -432,6 +447,10 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
               <div className="space-y-2">
                 {pendingTasks.map(task => {
                   const isEditingThis = editingTaskId === task.id;
+                  const canCompleteThis = !isViewer && (isAdmin || (isSalesRep && task.assigned_to === currentUser?.id));
+                  const canEditThis = !isViewer && (isAdmin || (isSalesRep && task.assigned_to === currentUser?.id));
+                  const canDeleteThis = isAdmin;
+
                   return (
                     <div key={task.id} className="p-3 bg-slate-50/90 rounded-xl border border-slate-100 hover:border-slate-200 transition-all">
                       {isEditingThis ? (
@@ -462,32 +481,42 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
                       ) : (
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
-                            <button onClick={() => handleCompleteTask(task.id)} className="text-slate-300 hover:text-indigo-600 transition-colors" title="Complete task">
-                              <CheckCircle2 className="w-4 h-4" />
-                            </button>
+                            {canCompleteThis ? (
+                              <button onClick={() => handleCompleteTask(task.id)} className="text-slate-300 hover:text-indigo-600 transition-colors" title="Complete task">
+                                <CheckCircle2 className="w-4 h-4" />
+                              </button>
+                            ) : (
+                              <span className="text-slate-300">
+                                <CheckCircle2 className="w-4 h-4" />
+                              </span>
+                            )}
                             <span className="text-xs font-semibold text-slate-800 truncate">{task.title}</span>
                           </div>
                           <div className="flex items-center gap-1.5 flex-shrink-0">
                             {task.due_date && task.due_date < today && (
                               <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">Overdue</span>
                             )}
-                            <button
-                              onClick={() => {
-                                setEditingTaskId(task.id);
-                                setTaskEditForm({ title: task.title, priority: task.priority, due_date: task.due_date || '' });
-                              }}
-                              className="p-1 text-slate-400 hover:text-indigo-600 transition-colors"
-                              title="Edit Task"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteTask(task.id)}
-                              className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
-                              title="Delete Task"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
+                            {canEditThis && (
+                              <button
+                                onClick={() => {
+                                  setEditingTaskId(task.id);
+                                  setTaskEditForm({ title: task.title, priority: task.priority, due_date: task.due_date || '' });
+                                }}
+                                className="p-1 text-slate-400 hover:text-indigo-600 transition-colors"
+                                title="Edit Task"
+                              >
+                                <Edit2 className="w-3 h-3" />
+                              </button>
+                            )}
+                            {canDeleteThis && (
+                              <button
+                                onClick={() => handleDeleteTask(task.id)}
+                                className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
+                                title="Delete Task"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                              </button>
+                            )}
                           </div>
                         </div>
                       )}
@@ -501,9 +530,11 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
                     {completedTasks.map(task => (
                       <div key={task.id} className="flex items-center justify-between py-1 px-2 text-xs text-slate-400">
                         <span className="line-through truncate">{task.title}</span>
-                        <button onClick={() => handleDeleteTask(task.id)} className="text-slate-300 hover:text-rose-500">
-                          <Trash2 className="w-3 h-3" />
-                        </button>
+                        {isAdmin && (
+                          <button onClick={() => handleDeleteTask(task.id)} className="text-slate-300 hover:text-rose-500" title="Delete Task">
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -518,16 +549,18 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
               <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 Activity History ({linkedActivities.length})
               </h4>
-              <button
-                onClick={() => setShowActivityForm(!showActivityForm)}
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors"
-              >
-                <Plus className="w-3 h-3" /> Log Activity
-              </button>
+              {canCreateActivity && (
+                <button
+                  onClick={() => setShowActivityForm(!showActivityForm)}
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors"
+                >
+                  <Plus className="w-3 h-3" /> Log Activity
+                </button>
+              )}
             </div>
 
             {/* Inline Activity Form */}
-            {showActivityForm && (
+            {canCreateActivity && showActivityForm && (
               <form onSubmit={handleLogActivity} className="bg-indigo-50/50 border border-indigo-200 rounded-2xl p-3 mb-3 space-y-2 animate-view-enter">
                 <select
                   value={activityForm.action_type}
@@ -564,29 +597,36 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
               <div className="space-y-2">
                 {linkedActivities.map(act => {
                   const isEditing = editingActivityId === act.id;
+                  const canEditThis = !isViewer && (isAdmin || (isSalesRep && act.user_id === currentUser?.id));
+                  const canDeleteThis = isAdmin;
+
                   return (
                     <div key={act.id} className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 group">
                       <div className="flex items-center justify-between text-[11px] mb-1">
                         <span className="font-bold text-indigo-700 capitalize">{act.action_type.replace(/_/g, ' ')}</span>
                         <div className="flex items-center gap-1.5">
                           <span className="text-[10px] text-slate-400">{timeAgo(act.created_at)}</span>
-                          <button
-                            onClick={() => {
-                              setEditingActivityId(act.id);
-                              setEditActivityText(act.description || '');
-                            }}
-                            className="text-slate-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100"
-                            title="Edit Activity"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteActivity(act.id)}
-                            className="text-slate-400 hover:text-rose-600 transition-colors opacity-0 group-hover:opacity-100"
-                            title="Delete Activity"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
+                          {canEditThis && (
+                            <button
+                              onClick={() => {
+                                setEditingActivityId(act.id);
+                                setEditActivityText(act.description || '');
+                              }}
+                              className="text-slate-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100"
+                              title="Edit Activity"
+                            >
+                              <Edit2 className="w-3 h-3" />
+                            </button>
+                          )}
+                          {canDeleteThis && (
+                            <button
+                              onClick={() => handleDeleteActivity(act.id)}
+                              className="text-slate-400 hover:text-rose-600 transition-colors opacity-0 group-hover:opacity-100"
+                              title="Delete Activity"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
                         </div>
                       </div>
                       {isEditing ? (

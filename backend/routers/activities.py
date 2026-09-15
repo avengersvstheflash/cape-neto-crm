@@ -18,6 +18,12 @@ def create_activity(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role == "viewer":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Viewers have read-only access"
+        )
+
     # Verify lead exists
     lead = db.query(Lead).filter(Lead.id == activity_in.lead_id).first()
     if not lead:
@@ -80,6 +86,12 @@ def update_activity(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role == "viewer":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Viewers have read-only access"
+        )
+
     activity = db.query(Activity).filter(Activity.id == activity_id).first()
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
@@ -104,13 +116,15 @@ def delete_activity(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required to delete activities"
+        )
+
     activity = db.query(Activity).filter(Activity.id == activity_id).first()
     if not activity:
         raise HTTPException(status_code=404, detail="Activity not found")
-
-    # RBAC: sales_rep can only delete activities they created
-    if current_user.role == "sales_rep" and activity.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this activity")
 
     db.delete(activity)
     db.commit()

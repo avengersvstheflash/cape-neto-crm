@@ -299,6 +299,7 @@ export default function App() {
               <LeadsView
                 leads={leads}
                 stages={stages}
+                currentUser={currentUser}
                 onOpenLead={handleOpenLead}
                 onCreateLead={handleCreateLead}
                 onUpdateLead={handleUpdateLead}
@@ -310,6 +311,7 @@ export default function App() {
               <TasksView
                 tasks={tasks}
                 leads={leads}
+                currentUser={currentUser}
                 onCompleteTask={handleCompleteTask}
                 onCreateTask={handleCreateTask}
                 onUpdateTask={handleUpdateTask}
@@ -331,6 +333,7 @@ export default function App() {
               <ActivityView
                 activities={activities}
                 leads={leads}
+                currentUser={currentUser}
                 onOpenLead={handleOpenLead}
                 onUpdateActivity={handleUpdateActivity}
                 onDeleteActivity={handleDeleteActivity}
@@ -345,6 +348,7 @@ export default function App() {
         <LeadDetailPanel
           lead={selectedLead}
           stages={stages}
+          currentUser={currentUser}
           onClose={() => setSelectedLead(null)}
           onRefresh={fetchAllData}
           addToast={addToast}

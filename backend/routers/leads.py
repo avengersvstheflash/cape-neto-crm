@@ -47,6 +47,12 @@ def create_lead(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if current_user.role == "viewer":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Viewers have read-only access"
+        )
+
     normalized_handle = lead_in.instagram_handle.lstrip('@').lower()
 
     existing = db.query(Lead).filter(
@@ -102,6 +108,12 @@ def update_lead(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if current_user.role == "viewer":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Viewers have read-only access"
+        )
+
     lead = db.query(Lead).filter(Lead.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
@@ -129,12 +141,15 @@ def delete_lead(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if current_user.role != "admin":
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required to delete leads"
+        )
+
     lead = db.query(Lead).filter(Lead.id == lead_id).first()
     if not lead:
         raise HTTPException(status_code=404, detail="Lead not found")
-
-    if current_user.role == "sales_rep" and lead.assigned_to != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to delete this lead")
 
     db.delete(lead)
     db.commit()

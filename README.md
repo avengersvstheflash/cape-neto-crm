@@ -18,11 +18,13 @@
 
 ## 🚀 Live Demonstrations
 
-| Component | Platform | Live URL |
+> 🌐 **Interactive Live Application**: [**Cape Neto CRM Live Web App**](https://cape-neto-crm.vercel.app/) *(Deployed on Vercel Edge)*
+
+| Component | Platform | Live URL / Access |
 |---|---|---|
-| **Frontend Workspace (SPA)** | Vercel Edge Network | `https://cape-neto-crm.vercel.app` *(Configure with your Vercel URL)* |
-| **Backend REST API** | Render.com Web Service | `https://cape-neto-crm-backend.onrender.com` *(Configure with your Render URL)* |
-| **Interactive OpenAPI Docs** | Swagger UI | `https://cape-neto-crm-backend.onrender.com/docs` |
+| **Frontend Workspace (SPA)** | Vercel Edge Network | [**Launch Cape Neto CRM Demo**](https://cape-neto-crm.vercel.app/) |
+| **Backend REST API** | Render.com Web Service | [**Live API Service**](https://cape-neto-crm-backend.onrender.com) |
+| **Interactive OpenAPI Docs** | Swagger UI | [**Explore Swagger UI Docs**](https://cape-neto-crm-backend.onrender.com/docs) |
 
 ---
 
@@ -40,6 +42,8 @@ Traditional enterprise CRMs (HubSpot, Salesforce) failed to meet agency operatio
 ---
 
 ## 🖥️ Workspace Layout & Design
+
+![Cape Neto CRM Analytics Dashboard](docs/dashboard-screenshot.png)
 
 ```
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
@@ -102,13 +106,18 @@ Every core business entity is fully editable and modifiable with direct asynchro
 
 ## 🛡️ Role-Based Access Control (RBAC) Matrix
 
-Access control is enforced at the dependency injection level in FastAPI, ensuring strict row-level data isolation:
+Access control is strictly enforced at both the FastAPI API layer and the React UI layer, ensuring precise data isolation and governance:
 
 | Role | Leads | Task Queue | Activity Log | Client Accounts | Pipeline Stages | User Management |
 |---|:---:|:---:|:---:|:---:|:---:|:---:|
-| `admin` | Full CRUD (All) | Full CRUD (All) | Full Audit Access | Full CRUD | Full CRUD | Full Access |
-| `sales_rep` | Scoped to Own Leads | Scoped to Own Tasks | Scoped to Own Leads | Read-Only | Read-Only | Self Profile Only |
-| `viewer` | Read-Only | Read-Only | Read-Only | Read-Only | Read-Only | Self Profile Only |
+| `admin` | **Full CRUD** (Global Edit & Delete) | **Full CRUD** (Global Edit & Delete) | **Full Audit** (Edit & Delete All) | **Full CRUD** | **Full CRUD** | **Full Access** |
+| `sales_rep` | **Create & Edit Own** (No Delete) | **Create & Complete Own** (No Delete) | **Log & Edit Own** (No Delete) | Read-Only | Read-Only | Self Profile Only |
+| `viewer` | **Read-Only** (Zero Modifications) | **Read-Only** (Zero Modifications) | **Read-Only** (Zero Modifications) | Read-Only | Read-Only | Self Profile Only |
+
+> [!NOTE]
+> - **Admin**: The only role permitted to perform destructive actions (`DELETE`) across leads, tasks, activities, client accounts, and pipeline stages, or modify global client contracts.
+> - **Sales Rep**: High-velocity operational role restricted to managing and advancing their own assigned pipeline touches. Cannot delete records or modify business client accounts.
+> - **Viewer**: Auditor and observer role with zero write permissions across the entire application. All creation buttons, edit modals, trash icons, and status dropdowns are completely hidden or disabled in the UI, and any API write requests are rejected with `403 Forbidden`.
 
 ---
 
