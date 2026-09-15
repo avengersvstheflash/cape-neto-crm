@@ -22,13 +22,13 @@ function timeAgo(dateStr) {
   return `${Math.floor(hrs / 24)}d ago`;
 }
 
-export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh, addToast }) {
 export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh, addToast, currentUser }) {
   const [visible, setVisible] = useState(false);
   const [linkedTasks, setLinkedTasks] = useState([]);
   const [linkedActivities, setLinkedActivities] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // RBAC Permission Gates
   const isAdmin = currentUser?.role === 'admin';
   const isViewer = currentUser?.role === 'viewer';
   const isSalesRep = currentUser?.role === 'sales_rep';
@@ -257,38 +257,24 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
 
   return (
     <>
-      {/* Overlay */}
+      {/* Backdrop Overlay */}
       <div
         className={`fixed inset-0 bg-slate-900/30 backdrop-blur-[2px] z-40 transition-opacity duration-300
           ${visible ? 'opacity-100' : 'opacity-0'}`}
         onClick={handleClose}
       />
 
-      {/* Slide-Over Panel */}
+      {/* Slide-Over Drawer */}
       <div
         className={`fixed top-0 right-0 h-full w-[460px] max-w-full bg-white border-l border-slate-200 shadow-2xl z-50 flex flex-col
           transition-transform duration-300 ease-out
           ${visible ? 'translate-x-0' : 'translate-x-full'}`}
       >
-        {/* Header */}
+        {/* Drawer Header */}
         <div className="px-6 py-5 border-b border-slate-100 flex items-start justify-between flex-shrink-0 bg-slate-50/50">
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <span className="text-lg font-bold text-indigo-600 truncate">{lead.instagram_handle}</span>
-              <button
-                onClick={() => setIsEditingLead(!isEditingLead)}
-                title="Edit Lead Details"
-                className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-              >
-                <Edit2 className="w-3.5 h-3.5" />
-              </button>
-              <button
-                onClick={handleDeleteLead}
-                title="Delete Lead"
-                className="p-1 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
               {canEditLead && (
                 <button
                   onClick={() => setIsEditingLead(!isEditingLead)}
@@ -328,8 +314,8 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto px-6 py-5 space-y-6">
 
-          {/* Edit Lead Form (Collapsible) */}
-          {isEditingLead && (
+          {/* Edit Lead Form */}
+          {canEditLead && isEditingLead && (
             <form onSubmit={handleUpdateLead} className="bg-indigo-50/50 border border-indigo-200 rounded-2xl p-4 space-y-3 animate-view-enter">
               <div className="flex items-center justify-between">
                 <span className="text-xs font-bold uppercase tracking-wider text-indigo-900">Edit Lead Details</span>
@@ -406,12 +392,6 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
               <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 Tasks ({linkedTasks.length})
               </h4>
-              <button
-                onClick={() => setShowTaskForm(!showTaskForm)}
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors"
-              >
-                <Plus className="w-3 h-3" /> Schedule Task
-              </button>
               {canCreateTask && (
                 <button
                   onClick={() => setShowTaskForm(!showTaskForm)}
@@ -423,7 +403,6 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
             </div>
 
             {/* Quick Task Creation */}
-            {showTaskForm && (
             {canCreateTask && showTaskForm && (
               <form onSubmit={handleCreateTask} className="bg-indigo-50/40 border border-indigo-200 rounded-2xl p-3 mb-3 space-y-2 animate-view-enter">
                 <input
@@ -503,9 +482,6 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
                       ) : (
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
-                            <button onClick={() => handleCompleteTask(task.id)} className="text-slate-300 hover:text-indigo-600 transition-colors" title="Complete task">
-                              <CheckCircle2 className="w-4 h-4" />
-                            </button>
                             {canCompleteThis ? (
                               <button onClick={() => handleCompleteTask(task.id)} className="text-slate-300 hover:text-indigo-600 transition-colors" title="Complete task">
                                 <CheckCircle2 className="w-4 h-4" />
@@ -521,23 +497,6 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
                             {task.due_date && task.due_date < today && (
                               <span className="text-[10px] text-rose-600 font-bold bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">Overdue</span>
                             )}
-                            <button
-                              onClick={() => {
-                                setEditingTaskId(task.id);
-                                setTaskEditForm({ title: task.title, priority: task.priority, due_date: task.due_date || '' });
-                              }}
-                              className="p-1 text-slate-400 hover:text-indigo-600 transition-colors"
-                              title="Edit Task"
-                            >
-                              <Edit2 className="w-3 h-3" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteTask(task.id)}
-                              className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
-                              title="Delete Task"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
                             {canEditThis && (
                               <button
                                 onClick={() => {
@@ -572,9 +531,6 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
                     {completedTasks.map(task => (
                       <div key={task.id} className="flex items-center justify-between py-1 px-2 text-xs text-slate-400">
                         <span className="line-through truncate">{task.title}</span>
-                        <button onClick={() => handleDeleteTask(task.id)} className="text-slate-300 hover:text-rose-500">
-                          <Trash2 className="w-3 h-3" />
-                        </button>
                         {isAdmin && (
                           <button onClick={() => handleDeleteTask(task.id)} className="text-slate-300 hover:text-rose-500" title="Delete Task">
                             <Trash2 className="w-3 h-3" />
@@ -594,12 +550,6 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
               <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
                 Activity History ({linkedActivities.length})
               </h4>
-              <button
-                onClick={() => setShowActivityForm(!showActivityForm)}
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 flex items-center gap-1 transition-colors"
-              >
-                <Plus className="w-3 h-3" /> Log Activity
-              </button>
               {canCreateActivity && (
                 <button
                   onClick={() => setShowActivityForm(!showActivityForm)}
@@ -611,7 +561,6 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
             </div>
 
             {/* Inline Activity Form */}
-            {showActivityForm && (
             {canCreateActivity && showActivityForm && (
               <form onSubmit={handleLogActivity} className="bg-indigo-50/50 border border-indigo-200 rounded-2xl p-3 mb-3 space-y-2 animate-view-enter">
                 <select
@@ -658,23 +607,6 @@ export default function LeadDetailPanel({ lead, stages = [], onClose, onRefresh,
                         <span className="font-bold text-indigo-700 capitalize">{act.action_type.replace(/_/g, ' ')}</span>
                         <div className="flex items-center gap-1.5">
                           <span className="text-[10px] text-slate-400">{timeAgo(act.created_at)}</span>
-                          <button
-                            onClick={() => {
-                              setEditingActivityId(act.id);
-                              setEditActivityText(act.description || '');
-                            }}
-                            className="text-slate-400 hover:text-indigo-600 transition-colors opacity-0 group-hover:opacity-100"
-                            title="Edit Activity"
-                          >
-                            <Edit2 className="w-3 h-3" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteActivity(act.id)}
-                            className="text-slate-400 hover:text-rose-600 transition-colors opacity-0 group-hover:opacity-100"
-                            title="Delete Activity"
-                          >
-                            <Trash2 className="w-3 h-3" />
-                          </button>
                           {canEditThis && (
                             <button
                               onClick={() => {
