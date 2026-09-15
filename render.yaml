@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: cape-neto-crm-backend
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: "cd backend && pip install -r requirements.txt && python -m alembic upgrade head && python seed.py"
+    startCommand: "cd backend && uvicorn main:app --host 0.0.0.0 --port $PORT"
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./crm.db
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: "60"
+      - key: DEBUG
+        value: "false"
+      - key: FRONTEND_URL
+        value: "*"

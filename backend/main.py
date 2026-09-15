@@ -4,23 +4,32 @@ from sqlalchemy import text
 from sqlalchemy.orm import Session
 import models
 from database import engine, get_db
+from config import settings
 from routers import auth, leads, tasks, activities, clients, users, pipeline_stages
 
 # Create all DB tables on startup
 models.Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="Cape Neto CRM API")
+app = FastAPI(
+    title="Cape Neto CRM API",
+    description="Production-grade, Instagram-native CRM REST API for digital agency workflows",
+    version="1.0.0",
+)
 
-# CORS for frontend
+# CORS configuration for local and live frontend (Vercel)
+origins = ["*"]
+if settings.frontend_url:
+    origins.append(settings.frontend_url.rstrip("/"))
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Include routers - clean and simple
+# Include routers
 app.include_router(auth.router)
 app.include_router(leads.router)
 app.include_router(tasks.router)
@@ -32,10 +41,10 @@ app.include_router(pipeline_stages.router)
 @app.get("/")
 def root():
     return {
-        "message": "🚀 Cape Neto CRM Backend: Week 2 - Leads + Tasks + RBAC Active!",
-        "version": "Week 2",
-        "endpoints": ["/docs", "/health", "/leads/", "/auth/"],
-        "status": "Ready for lead CRUD operations"
+        "message": "🚀 Cape Neto CRM Backend API Live",
+        "version": "1.0.0",
+        "docs": "/docs",
+        "health": "/health",
     }
 
 @app.get("/health")

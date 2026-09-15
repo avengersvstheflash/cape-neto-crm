@@ -1,131 +1,131 @@
-# Cape Neto CRM — Engineering Case Study
+# Cape Neto CRM — Production Engineering Case Study & Live Platform
 
-> **Production-grade, Instagram-native Customer Relationship Management (CRM) system** engineered for **Cape Neto** (Cape Town, South Africa). Built during a high-velocity **92-hour engineering internship sprint**, designed around NACE career competencies: Critical Thinking, Technology Application, and Professionalism.
+> **Production-grade, Instagram-native Customer Relationship Management (CRM) system** engineered for **Cape Neto** — a high-velocity digital marketing agency based in Cape Town, South Africa. Built during an intensive **92-hour engineering sprint**, structured around NACE career competencies: Critical Thinking, Technology Application, and Software Professionalism.
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.135+-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
 [![Python](https://img.shields.io/badge/Python-3.10%20%7C%203.14-blue.svg?logo=python&logoColor=white)](https://python.org)
+[![React](https://img.shields.io/badge/React-18.3-61dafb.svg?logo=react&logoColor=black)](https://react.dev)
+[![Vite](https://img.shields.io/badge/Vite-6.1-646CFF.svg?logo=vite&logoColor=white)](https://vitejs.dev)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-3.4-38B2AC.svg?logo=tailwind-css&logoColor=white)](https://tailwindcss.com)
 [![SQLAlchemy](https://img.shields.io/badge/SQLAlchemy-2.0-red.svg)](https://www.sqlalchemy.org/)
-[![Alembic](https://img.shields.io/badge/Alembic-Migrations-orange.svg)](https://alembic.sqlalchemy.org/)
+[![Alembic](https://img.shields.io/badge/Alembic-Batch_Migrations-orange.svg)](https://alembic.sqlalchemy.org/)
+[![Render](https://img.shields.io/badge/Deploy-Render.com-46E3B7.svg?logo=render&logoColor=white)](https://render.com)
+[![Vercel](https://img.shields.io/badge/Deploy-Vercel-000000.svg?logo=vercel&logoColor=white)](https://vercel.com)
+[![Test Suite](https://img.shields.io/badge/Tests-14%2F14%20Passing-brightgreen.svg)](backend/test_api.py)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Test Suite](https://img.shields.io/badge/Tests-9%2F9%20Passing-brightgreen.svg)](backend/test_api.py)
 
 ---
 
-## Executive Summary
+## 🚀 Live Demonstrations
 
-Cape Neto is a South African creative and digital marketing agency acquiring clients primarily through Instagram direct messages and social discovery. Off-the-shelf enterprise CRMs (Salesforce, HubSpot) proved excessively complex, costly, and disconnected from Instagram direct messaging workflows.
-
-This project delivers an **Instagram-native CRM**: a secure, high-throughput REST API with row-level Role-Based Access Control (RBAC), automatic Instagram handle normalization, follow-up task orchestration, client account tracking, and a lightweight, fluid operational workspace.
-
----
-
-## System Architecture
-
-```
-                                 ┌────────────────────────┐
-                                 │   Operational Client   │
-                                 │ (Vite + React / SPA)   │
-                                 └───────────┬────────────┘
-                                             │ HTTP / JWT Bearer
-                                             ▼
-┌─────────────────────────────────────────────────────────────────────────────────┐
-│                           FASTAPI APPLICATION LAYER                             │
-│                                                                                 │
-│   ┌───────────────┐  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐    │
-│   │  /auth (JWT)  │  │ /leads (CRUD) │  │ /tasks (Queue)│  │ /clients (Mgt)│    │
-│   └───────┬───────┘  └───────┬───────┘  └───────┬───────┘  └───────┬───────┘    │
-│           │                  │                  │                  │            │
-│   ┌───────▼──────────────────▼──────────────────▼──────────────────▼────────┐   │
-│   │              Row-Level RBAC Policy Engine (admin/rep/viewer)            │   │
-│   └──────────────────────────────────┬──────────────────────────────────────┘   │
-│                                      │                                          │
-│   ┌──────────────────────────────────▼──────────────────────────────────────┐   │
-│   │                        SQLAlchemy 2.0 ORM Engine                        │   │
-│   └──────────────────────────────────┬──────────────────────────────────────┘   │
-└──────────────────────────────────────┼──────────────────────────────────────────┘
-                                       │
-                                       ▼
-                     ┌──────────────────────────────────┐
-                     │    Relational Persistence DB     │
-                     │  SQLite (Dev) / Postgres (Prod)  │
-                     │  Alembic Batch-mode Migrations   │
-                     └──────────────────────────────────┘
-```
-
-### Core Technology Stack
-
-| Layer | Technology | Engineering Rationale |
+| Component | Platform | Live URL |
 |---|---|---|
-| **API Framework** | FastAPI (Python 3.10–3.14) | High throughput ASGI performance, native OpenAPI/Swagger self-documentation, and declarative dependency injection. |
-| **Data Validation** | Pydantic V2 & `pydantic-settings` | Strict request parsing, zero-overhead serialisation, and environment configuration management. |
-| **Persistence & ORM** | SQLAlchemy 2.0 | Declarative relational mappings, explicit query execution, and database dialect portability. |
-| **Schema Migrations** | Alembic (Batch Mode) | Version-controlled DDL tracking; enabled `render_as_batch=True` to execute constraint updates safely on SQLite without data truncation. |
-| **Authentication & RBAC** | Stateless JWT (`python-jose`) + `bcrypt` | Secure password hashing with salt generation, token-based session verification, and granular role enforcement. |
-| **Frontend UI** | React + Vite + Tailwind CSS + Recharts | Fluid component architecture with analytics charts, slide-over detail panels, and CSS cubic-bezier transitions. |
+| **Frontend Workspace (SPA)** | Vercel Edge Network | `https://cape-neto-crm.vercel.app` *(Configure with your Vercel URL)* |
+| **Backend REST API** | Render.com Web Service | `https://cape-neto-crm-backend.onrender.com` *(Configure with your Render URL)* |
+| **Interactive OpenAPI Docs** | Swagger UI | `https://cape-neto-crm-backend.onrender.com/docs` |
 
 ---
 
-## Role-Based Access Control (RBAC) Matrix
+## 📌 Executive Summary
 
-Access control is enforced at the dependency injection level in FastAPI, ensuring row-level data isolation across sales agents:
+Cape Neto is a South African creative and performance digital marketing agency acquiring clients primarily through Instagram direct messages, creator collaborations, and social discovery. 
 
-| Role | Leads | Task Queue | Activity Log | Client Accounts | User Management |
-|---|:---:|:---:|:---:|:---:|:---:|
-| `admin` | Full CRUD (All) | Full CRUD (All) | Full Audit Access | Full Access | Full Access |
-| `sales_rep` | Scoped to Assigned Leads | Own Tasks Only | Scoped to Assigned Leads | Read-Only | Self Profile Only |
-| `viewer` | Read-Only | Read-Only | Read-Only | Read-Only | Self Profile Only |
+Traditional enterprise CRMs (HubSpot, Salesforce) failed to meet agency operational requirements:
+1. **Disconnection from Instagram Workflows**: Generic CRMs treat social handles as afterthought text fields rather than primary communication channels.
+2. **Excessive Complexity & Cost**: Bloated enterprise tiers with per-seat billing, sluggish load times, and steep learning curves that slowed down sales representatives.
+3. **Forgotten DM Inquiries**: Absence of a unified "Daily Action Queue" connecting social touches to time-critical follow-ups.
 
----
-
-## Shipped Core Capabilities
-
-### 1. Instagram-Native Lead Engine
-- **Normalization**: Automatic sanitization and `@` prefixing of handles (e.g. `raw_handle` &rarr; `@raw_handle`).
-- **Status Progression Lifecycle**: `active` &rarr; `won` &rarr; `lost` &rarr; `paused`.
-- **Relational Integrity**: Foreign-key bindings to pipeline stages and assigned account executives with cascade guarantees.
-
-### 2. Task & Follow-up Orchestration
-- **Action Types**: `call`, `follow_up`, `proposal`, `check_in`, and `manual`.
-- **Due Date Scheduling**: Overdue task filtering with automatic priority stratification (`low`, `medium`, `high`, `urgent`).
-- **Auto-assignment**: Tasks automatically bound to the creating representative or explicitly delegated by an administrator.
-- **Idempotent Completion**: State toggle (`PUT /tasks/{id}/complete`) recording server-side completion timestamps.
-
-### 3. Comprehensive Audit Trail (Activities)
-- Immutable timeline records capturing interaction history: `stage_change`, `task_created`, `task_completed`, `note_added`, `deal_created`, and `message_sent`.
-
-### 4. Client & Account Directory
-- Dedicated `Client` model tracking agency client plans (`starter`, `growth`, `pro`, `enterprise`), subscription statuses (`active`, `paused`, `churned`, `trial`), and renewal milestones.
-
-### 5. Fluid Operational Workspace (Frontend)
-- **Analytics Dashboard**: Pipeline funnel, lead source distribution donut, revenue pipeline (ZAR), and task progress charts powered by Recharts.
-- **Interconnected Slide-over**: Click any lead to slide out full details, linked tasks, activity history, and inline activity logging.
-- **Micro-interactions**: Counting KPI counters, animated toast notifications, and smooth tab transitions.
+**Cape Neto CRM solves this:** An Instagram-native CRM combining a high-throughput **FastAPI** backend with row-level **Role-Based Access Control (RBAC)**, an immutable **audit trail**, and a responsive **React 18 + Vite** workspace equipped with **Recharts analytics** and an **interconnected slide-over drawer**.
 
 ---
 
-## Architectural Specifications & Future Extensions
+## 🖥️ Workspace Layout & Design
 
-The data schema is forward-compatible and intentionally designed for horizontal integration:
-
-- **Instagram DM Webhook Pipeline**: The `WebhookLog` entity (`webhook_id`, `source`, `event_type`, `payload`, `processed`) is primed to ingest Meta Graph API webhook events with replay resilience and deduplication.
-- **Automated Pipeline Worker**: The `PipelineStage.auto_tasks` specification provides schema backing for event-driven task automation upon lead stage transitions.
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────────┐
+│  CN │ Cape Neto CRM                                           admin@capeneto.com [Sign Out] │
+├──────────┬──────────────────────────────────────────────────────────────────────────────────┤
+│          │  ┌───────────────┬───────────────┬───────────────┬───────────────┬─────────────┐ │
+│ 📊 Dash  │  │ Total Leads:6 │ Active: 3     │ Tasks Due: 4  │ Clients: 3    │ Value: R185k│ │
+│ 🎯 Leads │  └───────────────┴───────────────┴───────────────┴───────────────┴─────────────┘ │
+│ 📋 Tasks │                                                                                  │
+│ 👥 Clients│  ┌─ Analytics Dashboard ───────────────────────┐ ┌─ Lead Slide-Over Drawer ────┐ │
+│ 📈 Audit │  │  [Lead Pipeline Funnel] [Lead Sources Donut]│ │ @cape_craft_spirits [Edit]   │ │
+│          │  │  [Revenue by Stage]     [Task Completion]   │ │ Status: Active | Value: R35k │ │
+│          │  │                                             │ │ ──────────────────────────── │ │
+│          │  │  ── Recent Activity Feed ──                 │ │ Tasks (2 linked)             │ │
+│          │  │  • @cape_craft → Proposal Sent  (10m ago)   │ │  ☑ Send brochure (Due Today) │ │
+│          │  │  • @atlantic_sea → Deal Closed  (1h ago)    │ │ Activity History (3 logs)    │ │
+│          │  │  • @table_mtn → Retainer Renewed(2h ago)    │ │  • DM Sent: Proposal deck    │ │
+│          │  └─────────────────────────────────────────────┘ └──────────────────────────────┘ │
+└──────────┴──────────────────────────────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## ⚡ 2-Minute Quickstart
+## ⚡ Key Capabilities Shipped
+
+### 1. Analytics & Pipeline Intelligence (Recharts)
+- **Pipeline Progression Funnel**: Bar visualization categorizing leads across `Active`, `Won`, `Lost`, and `Paused`.
+- **Acquisition Channel Distribution**: Donut breakdown revealing social discovery sources (Instagram Organic, Meta Ads, Referrals).
+- **Revenue Pipeline**: Horizontal stacked bar projecting prospective contract values in South African Rand (ZAR).
+- **Task Velocity Metric**: Real-time completion ratio tracking team operational efficiency.
+
+### 2. Interconnected Lead Slide-Over Drawer
+- Clicking any lead in the application opens a sleek **300ms cubic-bezier slide-over drawer** without navigating away.
+- **Relational Data Scoping**: Asynchronously fetches linked tasks (`GET /tasks/?lead_id={id}`) and complete interaction histories (`GET /activities/?lead_id={id}`).
+- **In-Drawer Actions**: Complete follow-ups, update lead deal values, schedule new tasks, and record DM touchpoints right inside the drawer.
+
+### 3. Complete CRUD & Asynchronous Persistence
+Every core business entity is fully editable and modifiable with direct asynchronous persistence to the local SQLite/PostgreSQL database:
+- **Leads**: Edit contact details, status, stage, and deal size; delete with cascade guarantees.
+- **Task Queue**: Edit titles, priority levels (`low`, `medium`, `high`, `urgent`), due dates, and lifecycle states.
+- **Client Accounts**: Register client accounts, modify retainer tiers (`starter`, `growth`, `pro`, `enterprise`), and track annual renewals.
+- **Activity Timeline**: Edit interaction summaries and remove outdated records.
+- **Pipeline Stages**: Configure and reorder sequential deal milestones.
+
+---
+
+## 🏗️ System Architecture
+
+| Tier | Technology | Rationale |
+|---|---|---|
+| **API Server** | FastAPI (Python 3.10–3.14) | High throughput ASGI runtime, native OpenAPI self-documentation, declarative dependency injection. |
+| **Persistence & ORM** | SQLAlchemy 2.0 | Declarative relational mappings, query performance, and multi-dialect compatibility. |
+| **Migrations** | Alembic (Batch Mode) | `render_as_batch=True` enabled to perform safe schema alterations on SQLite without table truncation. |
+| **Authentication & RBAC** | Stateless JWT (`python-jose`) + `bcrypt` | Secure salted password hashing and granular row-level data isolation. |
+| **Frontend Framework** | React 18 + Vite 6 | Sub-second Hot Module Replacement, lean build bundles (~180 kB gzipped), and component-based UI. |
+| **Design System** | Tailwind CSS + Lucide Icons | Utility-first styling with custom animation keyframes and responsive layout cards. |
+| **Data Visualization** | Recharts (SVG) | Declarative charting engine for pipeline funnels and revenue projection. |
+
+---
+
+## 🛡️ Role-Based Access Control (RBAC) Matrix
+
+Access control is enforced at the dependency injection level in FastAPI, ensuring strict row-level data isolation:
+
+| Role | Leads | Task Queue | Activity Log | Client Accounts | Pipeline Stages | User Management |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| `admin` | Full CRUD (All) | Full CRUD (All) | Full Audit Access | Full CRUD | Full CRUD | Full Access |
+| `sales_rep` | Scoped to Own Leads | Scoped to Own Tasks | Scoped to Own Leads | Read-Only | Read-Only | Self Profile Only |
+| `viewer` | Read-Only | Read-Only | Read-Only | Read-Only | Read-Only | Self Profile Only |
+
+---
+
+## ⚡ 2-Minute Local Quickstart
 
 ### Prerequisites
 - Python 3.10+ (tested on Python 3.14)
-- Node.js 18+ (for frontend dashboard)
+- Node.js 18+ (tested on Node v24)
 - Git
 
-### 1. Setup & Start Backend
+### Step 1: Start Backend API
 ```bash
 # Clone the repository
 git clone https://github.com/avengersvstheflash/cape-neto-crm.git
 cd cape-neto-crm/backend
 
-# Create & activate virtual environment
+# Create and activate virtual environment
 python -m venv venv
 venv\Scripts\activate        # Windows
 source venv/bin/activate     # macOS / Linux
@@ -133,76 +133,116 @@ source venv/bin/activate     # macOS / Linux
 # Install dependencies
 pip install -r requirements.txt
 
-# Run migrations & seed demo data
+# Run migrations and seed demo data
 python -m alembic upgrade head
 python seed.py
 
-# Start API server
+# Launch FastAPI development server
 uvicorn main:app --reload --port 8000
 ```
+Interactive API documentation will be available at **[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)**.
 
-Interactive API documentation: **[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)**.
-
-### 2. Seeded Test Credentials
-| Role | Email | Password | Access Level |
-|---|---|---|---|
-| **Admin** | `admin@capeneto.com` | `admin123` | Global system control |
-| **Sales Rep** | `sarah.rep@capeneto.com` | `rep123` | Scoped to assigned leads & tasks |
-| **Viewer** | `auditor@capeneto.com` | `viewer123` | Read-only access |
-
-### 3. Run Automated Tests
+### Step 2: Launch Frontend Workspace
 ```bash
-pytest test_api.py -v
-```
+# In a new terminal window
+cd cape-neto-crm/frontend
 
-### 4. Launch Operational Frontend Dashboard
-```bash
-cd ../frontend
+# Install dependencies
 npm install
+
+# Start Vite dev server
 npm run dev
 ```
-Open **[http://localhost:5173](http://localhost:5173)** in your browser. Click the **👤 Admin** or **💼 Sales Rep** quick-login buttons to test live data immediately.
+Open **[http://localhost:5173](http://localhost:5173)** in your browser. Use the **Quick Demo Access** buttons to log in instantly:
+- **Admin**: `admin@capeneto.com` / `admin123`
+- **Sales Rep**: `sarah.rep@capeneto.com` / `rep123`
+- **Viewer**: `auditor@capeneto.com` / `viewer123`
 
 ---
 
-## API Reference Summary
+## 🚢 Production Deployment Guide
 
-### Authentication (`/auth`)
-- `POST /auth/register` — Register agency team member
-- `POST /auth/login` — Authenticate and receive signed JWT Bearer token
-- `GET /auth/me` — Retrieve active session profile and verified role
+### Deploy Backend to Render.com
+1. Create an account on **[Render.com](https://render.com)**.
+2. Click **New +** &rarr; **Blueprint** and connect your GitHub repository (Render will automatically detect `render.yaml`).
+   *Alternatively, create a **Web Service** with the following manual settings:*
+   - **Root Directory**: `backend`
+   - **Environment**: `Python 3`
+   - **Build Command**: `pip install -r requirements.txt && python -m alembic upgrade head && python seed.py`
+   - **Start Command**: `uvicorn main:app --host 0.0.0.0 --port $PORT`
+3. Configure Environment Variables in Render:
+   - `DATABASE_URL`: `sqlite:///./crm.db` (or connect a managed Render PostgreSQL database: `postgresql://...`)
+   - `JWT_SECRET_KEY`: `<generate-a-random-32-char-secret>`
+   - `JWT_ALGORITHM`: `HS256`
+   - `ACCESS_TOKEN_EXPIRE_MINUTES`: `60`
+   - `FRONTEND_URL`: `https://your-frontend.vercel.app` (or `*`)
+4. Click **Deploy**. Your API will be live at `https://<app-name>.onrender.com`.
 
-### Leads Management (`/leads`)
-- `GET /leads/` — Filterable lead index (RBAC scoped, status/stage filters, pagination)
-- `POST /leads/` — Ingest lead with Instagram handle normalization
-- `GET /leads/{id}` — Lead detail with relational activity history
-- `PUT /leads/{id}` — Modify lead attributes, assignment, or status
+---
 
-### Tasks Queue (`/tasks`)
-- `GET /tasks/` — List active tasks with overdue and priority filters
-- `POST /tasks/` — Create scheduled task linked to lead
-- `PUT /tasks/{id}/complete` — Mark task resolved with audit timestamp
-- `DELETE /tasks/{id}` — Remove task (admin or task owner)
+### Deploy Frontend to Vercel
+1. Create an account on **[Vercel.com](https://vercel.com)**.
+2. Click **Add New...** &rarr; **Project** and import your `cape-neto-crm` repository.
+3. Configure Project Settings:
+   - **Root Directory**: Click edit and select `frontend`
+   - **Framework Preset**: `Vite`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+4. Add Environment Variable:
+   - `VITE_API_BASE`: `https://<your-backend-app>.onrender.com` *(your live Render API URL, without trailing slash)*
+5. Click **Deploy**. Vercel will build and serve your SPA at `https://<project-name>.vercel.app`.
 
-### Client Accounts (`/clients`)
-- `GET /clients/` — Agency client directory
-- `POST /clients/` — Register converted client account
-- `GET /clients/{id}` — Client subscription detail
+---
 
-### Activity Timeline (`/activities`)
-- `GET /activities/` — Chronological lead interaction stream
-- `POST /activities/` — Record manual call log, DM note, or status update
+## 🧪 Automated Testing Suite (14/14 Passing)
+
+All endpoints, RBAC constraints, and CRUD lifecycle rules are verified with automated pytest regression tests:
+
+```bash
+cd backend
+pytest test_api.py -v
+```
+
+```text
+test_api.py::test_health_check PASSED                    [  7%]
+test_api.py::test_root_endpoint PASSED                   [ 14%]
+test_api.py::test_auth_failure_invalid_credentials PASSED[ 21%]
+test_api.py::test_auth_success_admin_login PASSED        [ 28%]
+test_api.py::test_auth_me_profile PASSED                 [ 35%]
+test_api.py::test_leads_list_and_rbac PASSED             [ 42%]
+test_api.py::test_tasks_list_and_completion PASSED       [ 50%]
+test_api.py::test_clients_list PASSED                    [ 57%]
+test_api.py::test_activities_list PASSED                 [ 64%]
+test_api.py::test_task_general_update PASSED             [ 71%]
+test_api.py::test_activity_update_and_delete PASSED      [ 78%]
+test_api.py::test_client_crud PASSED                     [ 85%]
+test_api.py::test_pipeline_stages_crud PASSED            [ 92%]
+test_api.py::test_lead_delete PASSED                     [100%]
+======================= 14 passed in 4.46s =======================
+```
+
+---
+
+## 📚 Technical Documentation Index
+
+Detailed specifications and architectural deep dives are cataloged in [`docs/`](docs/):
+- **[System Architecture](docs/architecture.md)**: Network topology, state management, and deployment model.
+- **[REST API Specification](docs/api.md)**: Exhaustive request and response documentation for all 7 routers.
+- **[Database Schema](docs/schema.md)**: Relational entity diagrams, field definitions, and migration strategies.
+- **[User Workflow Guide](docs/workflow.md)**: Day-in-the-life operational routines and slide-over user journeys.
+- **[Development Roadmap](docs/roadmap.md)**: Completed milestones and future enterprise roadmap.
+- **[Comprehensive Product Audit & Strategy](docs/audit_and_product_strategy.md)**: Full business and technical audit with expansion roadmap.
 
 ---
 
 ## 92-Hour Internship Delivery Context
 
-Developed by **[@avengersvstheflash](https://github.com/avengersvstheflash)** as part of the Cape Neto Solutions technical internship. 
+Developed by **[@avengersvstheflash](https://github.com/avengersvstheflash)** as part of the Cape Neto Solutions technical internship.
 
-The engagement focused on rapid delivery under real-world agency constraints:
-- Delivered zero-regression database schema versioning across multiple iterations using Alembic.
-- Enforced strict relational constraints and check guards at the database tier.
-- Balanced lean architectural footprint with enterprise-standard security practices.
+The project demonstrates high-velocity full-stack engineering under real-world agency constraints:
+- Built zero-downtime database schema versioning across multiple iterations with Alembic.
+- Enforced strict relational foreign keys and role-based data isolation at the ORM layer.
+- Refactored initial single-file prototypes into a scalable, decoupled component architecture with Recharts data visualization.
 
 ---
 

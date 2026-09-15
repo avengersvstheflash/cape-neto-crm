@@ -89,3 +89,4 @@ def delete_pipeline_stage(
     db.delete(stage)
     db.commit()
     return None
+

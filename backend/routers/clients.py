@@ -95,4 +95,4 @@ def delete_client(
 
     db.delete(client)
     db.commit()
-    return None
+    return None

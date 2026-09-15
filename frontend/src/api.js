@@ -3,7 +3,7 @@
  * Handles auth headers, JSON parsing, and error normalization.
  */
 
-const API_BASE = 'http://127.0.0.1:8000';
+const API_BASE = import.meta.env.VITE_API_BASE || 'http://127.0.0.1:8000';
 
 function getToken() {
   return localStorage.getItem('cape_neto_token') || '';
@@ -141,3 +141,4 @@ export async function deleteStage(id) {
 }
 
 export { API_BASE };
+

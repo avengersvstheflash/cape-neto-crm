@@ -5,6 +5,7 @@ from typing import Optional, List
 from database import get_db
 from auth import get_current_user
 from models import Activity, Lead, User
+from schemas import ActivityCreate, ActivityResponse
 from schemas import ActivityCreate, ActivityResponse, ActivityUpdate
 
 router = APIRouter(prefix="/activities", tags=["Activities"])
@@ -113,4 +114,4 @@ def delete_activity(
 
     db.delete(activity)
     db.commit()
-    return None
+    return None

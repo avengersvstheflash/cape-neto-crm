@@ -6,6 +6,7 @@ from datetime import date, datetime
 from database import get_db
 from auth import get_current_user
 from models import Task, Lead, User
+from schemas import TaskCreate, TaskResponse
 from schemas import TaskCreate, TaskResponse, TaskUpdate
 
 router = APIRouter(prefix="/tasks", tags=["Tasks"])

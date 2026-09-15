@@ -86,7 +86,7 @@ export default function App() {
     } finally {
       setLoading(false);
     }
-  }, [addToast, selectedLead?.id]);
+  }, [addToast, selectedLead]);
 
   // Validate token & fetch on mount
   useEffect(() => {

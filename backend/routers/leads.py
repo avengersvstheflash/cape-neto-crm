@@ -138,4 +138,4 @@ def delete_lead(
 
     db.delete(lead)
     db.commit()
-    return None
+    return None
