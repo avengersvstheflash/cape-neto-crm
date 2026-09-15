@@ -1,8 +1,7 @@
 import React, { useMemo } from 'react';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell,
-  PieChart, Pie, Legend,
-  AreaChart, Area, CartesianGrid
+  PieChart, Pie, Legend
 } from 'recharts';
 import { Activity, TrendingUp, Target, CheckCircle2 } from 'lucide-react';
 
@@ -16,6 +15,7 @@ const STATUS_COLORS = {
 const SOURCE_COLORS = ['#6366f1', '#8b5cf6', '#ec4899', '#f59e0b', '#10b981', '#06b6d4'];
 
 function timeAgo(dateStr) {
+  if (!dateStr) return '';
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
   if (mins < 1) return 'just now';
@@ -36,7 +36,12 @@ const ACTION_LABELS = {
   webhook_received: 'Webhook',
 };
 
-export default function DashboardView({ leads, tasks, activities, onOpenLead }) {
+export default function DashboardView({
+  leads = [],
+  tasks = [],
+  activities = [],
+  onOpenLead
+}) {
   // ── Pipeline Funnel ──
   const pipelineData = useMemo(() => {
     const counts = { active: 0, won: 0, paused: 0, lost: 0 };
@@ -52,7 +57,10 @@ export default function DashboardView({ leads, tasks, activities, onOpenLead }) 
   // ── Source Distribution ──
   const sourceData = useMemo(() => {
     const map = {};
-    leads.forEach(l => { map[l.source] = (map[l.source] || 0) + 1; });
+    leads.forEach(l => { 
+      const src = l.source || 'Instagram';
+      map[src] = (map[src] || 0) + 1; 
+    });
     return Object.entries(map).map(([name, value]) => ({ name, value }));
   }, [leads]);
 
@@ -222,7 +230,7 @@ export default function DashboardView({ leads, tasks, activities, onOpenLead }) 
                   </div>
                   {lead && (
                     <button
-                      onClick={() => onOpenLead(lead)}
+                      onClick={() => onOpenLead && onOpenLead(lead)}
                       className="text-xs font-semibold text-indigo-600 bg-indigo-50 hover:bg-indigo-100 px-2 py-1 rounded-lg transition-colors duration-150 whitespace-nowrap"
                     >
                       {lead.instagram_handle}
@@ -255,4 +263,3 @@ function ChartCard({ title, subtitle, icon: Icon, children }) {
     </div>
   );
 }
-

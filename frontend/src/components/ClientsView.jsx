@@ -16,8 +16,8 @@ const STATUS_STYLES = {
 };
 
 export default function ClientsView({
-  clients,
-  leads,
+  clients = [],
+  leads = [],
   onCreateClient,
   onUpdateClient,
   onDeleteClient,
@@ -97,7 +97,7 @@ export default function ClientsView({
     await onDeleteClient(clientId);
   };
 
-  const canMutate = !currentUser || currentUser.role === 'admin';
+  // Strict RBAC: only admins can mutate client contracts
   const canMutate = currentUser?.role === 'admin';
 
   return (
@@ -161,14 +161,14 @@ export default function ClientsView({
 
                     {client.owner_email && (
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-400 flex items-center gap-1"><Mail className="w-3 h-3" /> Contact</span>
+                        <span className="text-slate-400 flex items-center gap-1"><Mail className="w-3.5 h-3.5" /> Contact</span>
                         <span className="font-medium text-slate-700 truncate max-w-[180px]">{client.owner_email}</span>
                       </div>
                     )}
 
                     {client.plan_renews_at && (
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-400 flex items-center gap-1"><Calendar className="w-3 h-3" /> Renews</span>
+                        <span className="text-slate-400 flex items-center gap-1"><Calendar className="w-3.5 h-3.5" /> Renews</span>
                         <span className="font-medium text-slate-700">{client.plan_renews_at}</span>
                       </div>
                     )}
